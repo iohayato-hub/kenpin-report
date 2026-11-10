@@ -408,6 +408,20 @@
           </div>
         </div>
 
+        <!-- Month-by-Month Highlight Cards (一目でわかる月別検品数) -->
+        <div class="bg-gradient-to-br from-indigo-900 to-slate-900 rounded-2xl p-5 text-white shadow-md border border-indigo-700/50 space-y-3">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-indigo-700/60 pb-3">
+            <div>
+              <span class="bg-amber-400 text-slate-950 text-[10px] font-black px-2 py-0.5 rounded uppercase">Monthly Overview</span>
+              <h3 class="text-base font-black text-white mt-1">📅 月別 検品数量サマリー（一目で把握）</h3>
+            </div>
+            <p class="text-xs text-indigo-200">各月の検品実績・前月比を即座に一覧できます</p>
+          </div>
+          <div id="gasMonthlyTilesContainer" class="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-1">
+            <div class="text-xs text-indigo-300 col-span-4 py-4 text-center">データがありません</div>
+          </div>
+        </div>
+
         <!-- 4 KPI Cards -->
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <!-- KPI 1: 総検品数量 -->
@@ -498,6 +512,57 @@
                 </tr>
               </tbody>
             </table>
+          </div>
+        </div>
+
+        <!-- Product Code & Color & Size Breakdown Tables (細かな集計・データ収集) -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <!-- Product Breakdown Table -->
+          <div class="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden print-card">
+            <div class="p-4 border-b border-slate-200 bg-slate-50 flex items-center justify-between">
+              <h3 class="text-sm font-black text-slate-900">📦 商品コード・品番別 検品集計</h3>
+              <span class="text-xs text-slate-500">数量・構成比</span>
+            </div>
+            <div class="overflow-x-auto max-h-72">
+              <table class="w-full text-left text-xs">
+                <thead class="bg-slate-100 text-slate-600 sticky top-0">
+                  <tr>
+                    <th class="py-2.5 px-3">品番</th>
+                    <th class="py-2.5 px-3">品名 / カラー / サイズ</th>
+                    <th class="py-2.5 px-3 text-right">検品数</th>
+                    <th class="py-2.5 px-3 text-right">構成比</th>
+                  </tr>
+                </thead>
+                <tbody id="gasProductBreakdownTbody" class="divide-y divide-slate-100">
+                  <tr><td colspan="4" class="p-4 text-center text-slate-400">データがありません</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Color & Size Breakdown -->
+          <div class="space-y-4">
+            <!-- Color Breakdown -->
+            <div class="bg-white rounded-2xl border border-slate-200 shadow-xs p-4 print-card">
+              <div class="flex items-center justify-between pb-2 border-b border-slate-100 mb-3">
+                <h3 class="text-sm font-black text-slate-900">🎨 カラー・バリエーション別 集計</h3>
+                <span class="text-xs text-slate-500">内訳</span>
+              </div>
+              <div id="gasColorBreakdownContainer" class="grid grid-cols-2 gap-2 text-xs">
+                <div class="text-slate-400 col-span-2 text-center py-4">データがありません</div>
+              </div>
+            </div>
+
+            <!-- Size Breakdown -->
+            <div class="bg-white rounded-2xl border border-slate-200 shadow-xs p-4 print-card">
+              <div class="flex items-center justify-between pb-2 border-b border-slate-100 mb-3">
+                <h3 class="text-sm font-black text-slate-900">📏 サイズ別 集計</h3>
+                <span class="text-xs text-slate-500">内訳</span>
+              </div>
+              <div id="gasSizeBreakdownContainer" class="grid grid-cols-4 gap-2 text-xs">
+                <div class="text-slate-400 col-span-4 text-center py-4">データがありません</div>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -1124,18 +1189,23 @@
             records: draftRecords,
             workTime: workTimeRecord
           })
+        }).then(() => {
+          showToast('送信が完了しました！');
+          alert('【送信が完了しました】\nGoogleスプレッドシートへ検品実績（' + count + '件）を送信完了しました！\n検品ステーション画面に戻りました。続けて検品作業を行えます。');
         }).catch(err => {
           console.warn('GAS POST失敗:', err);
-          alert('【注意: GAS通信エラー】\n' + (err.message || '通信失敗') + '\n\n「設定・GAS連携」タブでURLとデプロイ設定（アクセス権: 全員）をご確認ください。');
+          showToast('送信が完了しました！(ローカル保存)');
+          alert('【送信が完了しました (ローカル保存)】\nデータはブラウザ内に正常に保存され、検品ステーション画面に戻りました。\n\n※スプレッドシートへの通信でエラーが発生しました。\n理由: ' + (err.message || '通信失敗') + '\n「設定・GAS連携」タブでURLとアクセス権設定（全員）をご確認ください。');
         });
       } else {
-        alert('【ローカル保存完了】\n検品実績はアプリ内に保存されました。\n\n※Googleスプレッドシートへ自動送信するには、「設定・GAS連携」タブでデプロイ済みWebアプリURL（https://script.google.com/macros/s/.../exec）を登録してください。');
+        showToast('送信が完了しました！(アプリ内保存)');
+        alert('【送信が完了しました】\n検品実績（' + count + '件）をアプリ内に保存しました。\n検品ステーション画面に戻りましたので、続けて作業を行えます。\n\n※Googleスプレッドシートへのクラウド同期も行う場合は、「設定・GAS連携」タブでWebアプリURLをご登録ください。');
       }
 
       draftRecords = [];
       saveDrafts();
       closeSubmitModal();
-      showToast('スプレッドシートへ送信完了しました！');
+      switchTab('workstation');
     }
 
     // Incremental AND Search
@@ -1328,9 +1398,148 @@
       document.getElementById('kpiSecPerItem').textContent = `${secPerItem} 秒`;
       document.getElementById('kpiItemsPerHour').textContent = `${itemsPerHour} 個/h`;
 
+      // Render Monthly Overview Tiles
+      renderMonthlyTiles(history, workTimes);
+
       // Render Charts & Worker ranking table
       renderWorkerRanking(history, workTimes);
       renderCharts(history, workTimes);
+
+      // Render Product, Color, Size Breakdowns
+      renderBreakdowns(history);
+    }
+
+    function renderMonthlyTiles(history, workTimes) {
+      const container = document.getElementById('gasMonthlyTilesContainer');
+      const monthMap = {};
+
+      history.forEach(h => {
+        if (!h.date) return;
+        const ym = h.date.substring(0, 7);
+        if (!monthMap[ym]) monthMap[ym] = { ym, qty: 0, minutes: 0 };
+        monthMap[ym].qty += (h.quantity || 0);
+      });
+
+      workTimes.forEach(w => {
+        if (!w.date) return;
+        const ym = w.date.substring(0, 7);
+        if (!monthMap[ym]) monthMap[ym] = { ym, qty: 0, minutes: 0 };
+        monthMap[ym].minutes += (w.minutes || 0);
+      });
+
+      const months = Object.keys(monthMap).sort().reverse();
+      if (months.length === 0) {
+        container.innerHTML = '<div class="text-xs text-indigo-300 col-span-4 py-4 text-center">データがありません</div>';
+        return;
+      }
+
+      const maxQty = Math.max(...months.map(m => monthMap[m].qty), 1);
+      const nowYm = new Date().toISOString().substring(0, 7);
+
+      container.innerHTML = months.map(ym => {
+        const d = monthMap[ym];
+        const [y, m] = ym.split('-');
+        const isCur = ym === nowYm;
+        const pct = Math.min(100, Math.max(10, Math.round((d.qty / maxQty) * 100)));
+        const secPerItem = d.qty > 0 && d.minutes > 0 ? (d.minutes * 60 / d.qty).toFixed(1) : '-';
+        return `
+          <div class="bg-white/10 hover:bg-white/20 p-3 rounded-xl border border-white/15 transition">
+            <div class="flex items-center justify-between text-xs font-bold text-white mb-1">
+              <span>${y}年${parseInt(m, 10)}月</span>
+              ${isCur ? '<span class="text-[9px] bg-amber-400 text-slate-900 px-1 rounded font-black">当月</span>' : ''}
+            </div>
+            <div class="flex items-baseline gap-1 my-1">
+              <span class="text-2xl font-black text-amber-300">${d.qty.toLocaleString()}</span>
+              <span class="text-xs font-bold text-indigo-200">個</span>
+            </div>
+            <div class="w-full bg-black/25 h-1.5 rounded-full overflow-hidden my-1.5">
+              <div class="bg-gradient-to-r from-amber-400 to-emerald-400 h-full rounded-full" style="width: ${pct}%"></div>
+            </div>
+            <div class="flex justify-between text-[10px] text-indigo-200 pt-1 border-t border-white/10">
+              <span>時間: ${(d.minutes / 60).toFixed(1)}h</span>
+              <span>速度: ${secPerItem}秒/点</span>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function renderBreakdowns(history) {
+      const prodTbody = document.getElementById('gasProductBreakdownTbody');
+      const colorContainer = document.getElementById('gasColorBreakdownContainer');
+      const sizeContainer = document.getElementById('gasSizeBreakdownContainer');
+
+      if (history.length === 0) {
+        prodTbody.innerHTML = '<tr><td colspan="4" class="p-4 text-center text-slate-400">データがありません</td></tr>';
+        colorContainer.innerHTML = '<div class="text-slate-400 col-span-2 text-center py-4">データがありません</div>';
+        sizeContainer.innerHTML = '<div class="text-slate-400 col-span-4 text-center py-4">データがありません</div>';
+        return;
+      }
+
+      const totalQty = history.reduce((sum, h) => sum + (h.quantity || 0), 0) || 1;
+
+      // Product breakdown
+      const prodMap = {};
+      const colorMap = {};
+      const sizeMap = {};
+
+      history.forEach(h => {
+        const code = h.code || 'UNKNOWN';
+        if (!prodMap[code]) prodMap[code] = { code, name1: h.name1 || '', name2: h.name2 || '', size: h.size || '', qty: 0 };
+        prodMap[code].qty += (h.quantity || 0);
+
+        let color = (h.name2 || '未設定').trim();
+        if (color.includes('/')) color = color.split('/')[0].trim();
+        colorMap[color] = (colorMap[color] || 0) + (h.quantity || 0);
+
+        const size = (h.size || '-').trim().toUpperCase();
+        sizeMap[size] = (sizeMap[size] || 0) + (h.quantity || 0);
+      });
+
+      const prods = Object.values(prodMap).sort((a, b) => b.qty - a.qty);
+      prodTbody.innerHTML = prods.map(p => {
+        const pct = ((p.qty / totalQty) * 100).toFixed(1);
+        return `
+          <tr class="hover:bg-slate-50">
+            <td class="py-2 px-3 font-mono font-bold text-indigo-900">${escapeHtml(p.code)}</td>
+            <td class="py-2 px-3 text-slate-700">${escapeHtml(p.name1)} <span class="text-[10px] text-slate-400">${escapeHtml(p.name2)} (${escapeHtml(p.size)})</span></td>
+            <td class="py-2 px-3 text-right font-black text-slate-900">${p.qty} 個</td>
+            <td class="py-2 px-3 text-right font-bold text-indigo-700">${pct}%</td>
+          </tr>
+        `;
+      }).join('');
+
+      // Colors
+      const colors = Object.keys(colorMap).sort((a, b) => colorMap[b] - colorMap[a]);
+      colorContainer.innerHTML = colors.map(c => {
+        const qty = colorMap[c];
+        const pct = ((qty / totalQty) * 100).toFixed(1);
+        return `
+          <div class="p-2.5 bg-slate-50 rounded-xl border border-slate-200">
+            <div class="flex justify-between font-bold text-slate-800">
+              <span>${escapeHtml(c)}</span>
+              <span class="text-indigo-700 font-black">${qty}個 (${pct}%)</span>
+            </div>
+            <div class="w-full bg-slate-200 h-1.5 rounded-full overflow-hidden mt-1.5">
+              <div class="bg-indigo-600 h-full rounded-full" style="width: ${pct}%"></div>
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      // Sizes
+      const sizes = Object.keys(sizeMap).sort((a, b) => sizeMap[b] - sizeMap[a]);
+      sizeContainer.innerHTML = sizes.map(s => {
+        const qty = sizeMap[s];
+        const pct = ((qty / totalQty) * 100).toFixed(1);
+        return `
+          <div class="p-2 bg-slate-50 rounded-xl border border-slate-200 text-center">
+            <span class="text-[10px] text-slate-500 font-bold block">${escapeHtml(s)}</span>
+            <span class="text-sm font-black text-slate-900">${qty}個</span>
+            <span class="text-[10px] text-indigo-600 font-bold block">${pct}%</span>
+          </div>
+        `;
+      }).join('');
     }
 
     function renderWorkerRanking(history, workTimes) {
