@@ -1060,7 +1060,10 @@
 
     // Step 5: Submit Modal
     function openSubmitModal() {
-      if (draftRecords.length === 0) return;
+      if (draftRecords.length === 0) {
+        alert('検品確認リストに商品がありません。\nバーコードをスキャンするか、手動検索から商品を追加してください。');
+        return;
+      }
       const count = draftRecords.length;
       const totalQty = draftRecords.reduce((sum, r) => sum + r.quantity, 0);
 
@@ -1096,6 +1099,7 @@
       } : null;
 
       const gasUrl = document.getElementById('gasUrlInput').value.trim();
+      const count = draftRecords.length;
 
       // Save locally to history & work times
       let history = [];
@@ -1120,7 +1124,12 @@
             records: draftRecords,
             workTime: workTimeRecord
           })
-        }).catch(err => console.warn('GAS POST失敗:', err));
+        }).catch(err => {
+          console.warn('GAS POST失敗:', err);
+          alert('【注意: GAS通信エラー】\n' + (err.message || '通信失敗') + '\n\n「設定・GAS連携」タブでURLとデプロイ設定（アクセス権: 全員）をご確認ください。');
+        });
+      } else {
+        alert('【ローカル保存完了】\n検品実績はアプリ内に保存されました。\n\n※Googleスプレッドシートへ自動送信するには、「設定・GAS連携」タブでデプロイ済みWebアプリURL（https://script.google.com/macros/s/.../exec）を登録してください。');
       }
 
       draftRecords = [];
