@@ -1,0 +1,1477 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>検品報告・生産性管理システム | PC専用ワークステーション</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- html5-qrcode CDN for USB HD & Webcams -->
+  <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+  <style>
+    @media print {
+      body { background: white !important; }
+      header, nav, #camera-controls, .no-print { display: none !important; }
+      #tab-productivity { display: block !important; }
+      .print-card { break-inside: avoid; border: 1px solid #cbd5e1 !important; }
+    }
+    input::-webkit-outer-spin-button,
+    input::-webkit-inner-spin-button {
+      -webkit-appearance: none;
+      margin: 0;
+    }
+    input[type=number] {
+      -moz-appearance: textfield;
+    }
+  </style>
+</head>
+<body class="bg-slate-100/70 text-slate-800 antialiased min-h-screen flex flex-col font-sans selection:bg-indigo-100 selection:text-indigo-900">
+
+  <!-- Header: PC Station Cockpit -->
+  <header class="bg-white border-b border-slate-200/90 sticky top-0 z-30 shadow-xs backdrop-blur-md bg-white/95">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex items-center justify-between">
+      <div class="flex items-center space-x-3">
+        <div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-indigo-700 to-indigo-500 flex items-center justify-center text-white font-black text-base shadow-sm tracking-tight">
+          検
+        </div>
+        <div>
+          <div class="flex items-center gap-2">
+            <h1 class="text-base sm:text-lg font-black text-slate-900 tracking-tight leading-tight">
+              検品報告・生産性管理システム
+            </h1>
+            <span class="hidden sm:inline-flex items-center gap-1 text-[11px] font-bold bg-indigo-50 text-indigo-700 border border-indigo-200 px-2 py-0.5 rounded-md">
+              <svg class="w-3 h-3 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+              PC専用ステーション
+            </span>
+            <span class="hidden md:inline-flex items-center gap-1 text-[11px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200 px-2 py-0.5 rounded-md">
+              <svg class="w-3 h-3 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
+              J5create JVU250 USB HD 対応
+            </span>
+          </div>
+          <p class="text-xs text-slate-500 font-medium flex items-center gap-2 mt-0.5">
+            <span id="syncIndicator" class="inline-block w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+            <span id="headerMasterCount">マスタ読込中...</span>
+            <span>·</span>
+            <span class="text-slate-700 font-bold">担当: <span id="headerWorkerName">山田</span></span>
+            <span class="hidden sm:inline">·</span>
+            <span id="headerGasStatus" class="hidden sm:inline text-slate-500 text-[11px]">セルフサービスGAS版</span>
+          </p>
+        </div>
+      </div>
+
+      <!-- Navigation Tabs -->
+      <div class="flex items-center gap-2">
+        <div class="bg-slate-100 p-1 rounded-xl border border-slate-200/80 flex items-center gap-1">
+          <button onclick="switchTab('workstation')" id="nav-workstation" class="px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 bg-white text-indigo-700 shadow-xs border border-slate-200/80">
+            <svg class="w-4 h-4 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>
+            <span>検品ステーション</span>
+            <span id="badgeDraftCount" class="hidden bg-rose-500 text-white rounded-full text-[10px] font-black px-1.5 py-0.2">0</span>
+          </button>
+
+          <button onclick="switchTab('productivity')" id="nav-productivity" class="px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 text-slate-600 hover:text-slate-900">
+            <svg class="w-4 h-4 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+            <span>生産性ダッシュボード</span>
+          </button>
+
+          <button onclick="switchTab('settings')" id="nav-settings" class="px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 text-slate-600 hover:text-slate-900">
+            <svg class="w-4 h-4 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+            <span>設定・GAS連携</span>
+          </button>
+        </div>
+
+        <button onclick="refreshMaster(true)" id="btnHeaderRefresh" class="px-2.5 py-1.5 rounded-xl text-slate-600 hover:text-indigo-600 hover:bg-slate-100 transition-colors flex items-center gap-1.5 text-xs font-semibold border border-slate-200 bg-white shadow-2xs" title="マスタを最新化">
+          <svg id="iconRefresh" class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+          <span class="hidden md:inline">マスタ更新</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Toast Notification -->
+  <div id="toastNotification" class="hidden fixed top-16 left-1/2 -translate-x-1/2 z-50 bg-slate-900 text-white text-xs font-bold py-2.5 px-5 rounded-full shadow-2xl flex items-center gap-2 animate-in fade-in slide-in-from-top-2">
+    <svg class="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+    <span id="toastMessage">完了しました</span>
+  </div>
+
+  <!-- Main Content Area: Wide Desktop Cockpit -->
+  <main class="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8">
+
+    <!-- ========================================================================= -->
+    <!-- TAB 1: PC 検品ステーション (超簡単入力フロー) -->
+    <!-- 1. WEBカメラ読込 -> 2. テンキー数量入力&Enter -> 3. 直ちにカメラ再開 -> 4. 確認リスト -> 5. 送信 -->
+    <!-- ========================================================================= -->
+    <section id="tab-workstation" class="block space-y-6">
+      
+      <!-- Top Status & Worker Bar -->
+      <div class="bg-white rounded-2xl p-4 border border-slate-200/90 shadow-xs flex flex-wrap items-center justify-between gap-4">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-xl bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-600 font-bold">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
+          </div>
+          <div>
+            <div class="text-[11px] font-bold text-slate-500 uppercase tracking-wider">作業ステーション担当者</div>
+            <div class="flex items-center gap-2 mt-0.5">
+              <input type="text" id="workerInput" class="px-2.5 py-1 bg-slate-50 border border-slate-200 rounded-lg text-sm font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white w-32" value="山田">
+              <div class="flex gap-1">
+                <button onclick="setQuickWorker('山田')" class="px-2 py-1 bg-slate-100 hover:bg-indigo-50 text-slate-700 hover:text-indigo-600 rounded text-xs font-semibold border border-slate-200">山田</button>
+                <button onclick="setQuickWorker('佐藤')" class="px-2 py-1 bg-slate-100 hover:bg-indigo-50 text-slate-700 hover:text-indigo-600 rounded text-xs font-semibold border border-slate-200">佐藤</button>
+                <button onclick="setQuickWorker('鈴木')" class="px-2 py-1 bg-slate-100 hover:bg-indigo-50 text-slate-700 hover:text-indigo-600 rounded text-xs font-semibold border border-slate-200">鈴木</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Camera Device Selector -->
+        <div class="flex items-center gap-2">
+          <span class="text-xs font-bold text-slate-600 flex items-center gap-1">
+            <svg class="w-4 h-4 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
+            入力カメラ:
+          </span>
+          <select id="cameraSelect" onchange="onCameraDeviceChange(this.value)" class="text-xs font-bold text-slate-800 bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 focus:outline-none focus:ring-2 focus:ring-indigo-500 max-w-[260px] truncate">
+            <option value="">カメラ検出中...</option>
+          </select>
+          <button id="btnToggleCamera" onclick="toggleCamera()" class="px-3 py-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-xs font-bold rounded-lg border border-indigo-200 flex items-center gap-1 transition">
+            <span id="cameraToggleText">カメラ停止</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- 2-COLUMN COCKPIT LAYOUT -->
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+        
+        <!-- LEFT COLUMN: Camera & Tenkey Input Workflow (7 Cols) -->
+        <div class="lg:col-span-7 space-y-4">
+          
+          <!-- Live Camera Feed Box -->
+          <div class="bg-slate-900 rounded-2xl overflow-hidden shadow-md border border-slate-800 relative">
+            <div class="px-4 py-2 bg-slate-950/80 border-b border-slate-800 flex items-center justify-between text-xs text-slate-300">
+              <div class="flex items-center gap-2">
+                <span id="camStatusDot" class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                <span class="font-bold text-white tracking-wide">1. バーコードスキャン (USB HD Webカメラ)</span>
+              </div>
+              <span class="text-[11px] text-slate-400">J5create JVU250 USB HD 最適化</span>
+            </div>
+
+            <!-- Video element container -->
+            <div class="relative bg-black flex items-center justify-center min-h-[260px] max-h-[340px] overflow-hidden">
+              <div id="pc-webcam-reader" class="w-full"></div>
+              
+              <!-- Targeting Overlay Guide Line -->
+              <div id="scannerGuideLine" class="pointer-events-none absolute inset-x-8 top-1/2 -translate-y-1/2 flex items-center justify-center">
+                <div class="w-full h-0.5 bg-gradient-to-r from-transparent via-rose-500 to-transparent shadow-[0_0_12px_rgba(244,63,94,0.9)] animate-pulse"></div>
+              </div>
+            </div>
+
+            <div class="p-2.5 bg-slate-950/90 text-center text-xs text-slate-400 flex items-center justify-center gap-2 border-t border-slate-800">
+              <span class="inline-block w-1.5 h-1.5 rounded-full bg-indigo-400"></span>
+              <span>バーコード（JANコード・商品コード）をカメラにかざすと自動検知します</span>
+            </div>
+          </div>
+
+          <!-- STEP 2 & 3: Tenkey Quantity Input Focus Zone -->
+          <div id="scannedItemCockpit" class="bg-white rounded-2xl p-5 border-2 border-indigo-200 shadow-md transition-all">
+            
+            <!-- Default idle state (before scan) -->
+            <div id="cockpitIdleState" class="py-6 text-center space-y-2">
+              <div class="w-12 h-12 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center mx-auto border border-indigo-100">
+                <svg class="w-6 h-6 animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z"/></svg>
+              </div>
+              <h3 class="text-sm font-extrabold text-slate-800">カメラにバーコードをかざしてください</h3>
+              <p class="text-xs text-slate-500 max-w-sm mx-auto">
+                読取完了後、自動で数量入力欄にフォーカスします。テンキーで数字を入力して [Enter] を押すだけで次へ進みます。
+              </p>
+            </div>
+
+            <!-- Active Scanned Item Zone (shown when item is read) -->
+            <div id="cockpitActiveState" class="hidden space-y-4">
+              <div class="bg-white border-2 border-indigo-300 p-4 rounded-xl shadow-xs space-y-2.5">
+                <div class="flex items-start justify-between">
+                  <div class="flex items-center gap-2">
+                    <span class="inline-flex items-center gap-1 text-[11px] font-black bg-emerald-600 text-white px-2 py-0.5 rounded shadow-2xs">
+                      <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                      1. スキャン完了
+                    </span>
+                    <span id="activeItemCode" class="text-sm font-black text-indigo-900 font-mono">RMB-001</span>
+                    <span class="text-xs font-mono text-slate-400">JAN: <span id="activeItemJan" class="font-mono">4580001230011</span></span>
+                  </div>
+                  <button onclick="cancelActiveScan()" class="text-slate-400 hover:text-slate-600 p-1 rounded-lg hover:bg-slate-100" title="キャンセル">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                  </button>
+                </div>
+
+                <h4 id="activeItemName1" class="text-base font-black text-slate-900 truncate">ROMBO</h4>
+
+                <!-- High Visibility Color & Size Box -->
+                <div class="bg-amber-50/80 border border-amber-200/90 rounded-xl p-3 flex flex-wrap items-center justify-between gap-3 shadow-2xs">
+                  <div class="flex items-center gap-2 min-w-0">
+                    <span class="text-xs font-black uppercase tracking-wider bg-amber-200 text-amber-900 px-2 py-0.5 rounded">カラー / 仕様</span>
+                    <span id="activeItemName2" class="text-base sm:text-lg font-black text-amber-950 truncate">BLK WHT S</span>
+                  </div>
+                  <div class="flex items-center gap-2 flex-shrink-0">
+                    <span class="text-xs font-black uppercase tracking-wider bg-slate-900 text-white px-2 py-0.5 rounded">サイズ</span>
+                    <span id="activeItemSize" class="text-xl sm:text-2xl font-black text-indigo-900 bg-white px-3 py-0.5 rounded-lg border-2 border-indigo-300 shadow-xs">M</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- 2. Quantity Input via Tenkey -->
+              <div class="bg-indigo-50/40 p-4 rounded-xl border border-indigo-100 space-y-3">
+                <div class="flex items-center justify-between">
+                  <label for="tenkeyQtyInput" class="text-xs font-black text-indigo-900 flex items-center gap-1.5">
+                    <svg class="w-4 h-4 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
+                    2. テンキーで検品数量を入力 & [Enter]
+                  </label>
+                  <span class="text-[11px] font-bold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-full">Enterで即時再開</span>
+                </div>
+
+                <div class="flex items-center gap-3">
+                  <button type="button" onclick="adjustTenkeyQty(-1)" class="w-12 h-12 rounded-xl bg-white hover:bg-slate-100 text-slate-800 text-2xl font-bold flex items-center justify-center border border-slate-200 shadow-xs active:scale-95 transition">-</button>
+                  <input 
+                    type="number" 
+                    id="tenkeyQtyInput" 
+                    min="1" 
+                    max="9999" 
+                    value="1" 
+                    onkeydown="handleTenkeyKeyDown(event)"
+                    class="flex-1 text-center text-3xl font-black py-2.5 bg-white border-2 border-indigo-400 focus:border-indigo-600 focus:ring-4 focus:ring-indigo-100 rounded-xl text-slate-900 shadow-inner"
+                  >
+                  <button type="button" onclick="adjustTenkeyQty(1)" class="w-12 h-12 rounded-xl bg-white hover:bg-slate-100 text-indigo-700 text-2xl font-bold flex items-center justify-center border border-slate-200 shadow-xs active:scale-95 transition">+</button>
+                </div>
+
+                <!-- Quick Quantity Stepper Buttons -->
+                <div class="grid grid-cols-4 gap-2">
+                  <button type="button" onclick="setTenkeyQty(1)" class="py-1.5 bg-white hover:bg-indigo-50 text-xs font-bold rounded-lg border border-slate-200 text-slate-700">1個</button>
+                  <button type="button" onclick="setTenkeyQty(5)" class="py-1.5 bg-white hover:bg-indigo-50 text-xs font-bold rounded-lg border border-slate-200 text-slate-700">5個</button>
+                  <button type="button" onclick="setTenkeyQty(10)" class="py-1.5 bg-white hover:bg-indigo-50 text-xs font-bold rounded-lg border border-slate-200 text-slate-700">10個</button>
+                  <button type="button" onclick="setTenkeyQty(50)" class="py-1.5 bg-white hover:bg-indigo-50 text-xs font-bold rounded-lg border border-slate-200 text-slate-700">50個</button>
+                </div>
+              </div>
+
+              <!-- 3. Confirm & Immediately Resume Camera -->
+              <button 
+                type="button" 
+                onclick="confirmActiveItem()" 
+                class="w-full py-3 bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 text-white font-black text-sm rounded-xl shadow-md transition flex items-center justify-center gap-2"
+              >
+                <span>3. 確定して次のバーコード読取へ</span>
+                <kbd class="px-2 py-0.5 bg-indigo-800 text-indigo-100 rounded text-xs font-mono font-bold">Enter ↵</kbd>
+              </button>
+            </div>
+          </div>
+
+          <!-- Fallback Manual Incremental Search (AND search with space split) -->
+          <div class="bg-white rounded-2xl p-4 border border-slate-200 shadow-xs relative">
+            <div class="flex items-center justify-between mb-2">
+              <label for="searchInput" class="text-xs font-bold text-slate-700 flex items-center gap-1.5">
+                <svg class="w-4 h-4 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+                手動検索（スペース区切りAND検索 / コード・品名・サイズ・JAN）
+              </label>
+              <span class="text-[11px] text-slate-400">バーコードが汚損している場合</span>
+            </div>
+
+            <div class="relative">
+              <input 
+                type="text" 
+                id="searchInput" 
+                class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 focus:border-indigo-600 focus:bg-white rounded-xl text-sm font-semibold text-slate-900 placeholder:text-slate-400 focus:outline-none transition shadow-2xs"
+                placeholder="例: ROMBO BLK または JANコードを入力..."
+                autocomplete="off"
+              >
+              <button id="btnClearSearch" onclick="clearSearch()" class="hidden absolute right-3 top-2.5 p-1 text-slate-400 hover:text-slate-600">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+              </button>
+            </div>
+
+            <!-- Suggestions container (Max 20 items scrollable) -->
+            <div id="suggestBox" class="hidden absolute left-0 right-0 top-full mt-1.5 bg-white border border-slate-200 rounded-xl shadow-2xl z-40 max-h-[300px] overflow-y-auto divide-y divide-slate-100"></div>
+          </div>
+        </div>
+
+        <!-- RIGHT COLUMN: 4. Live Confirmation List & 5. Submit to GAS (5 Cols) -->
+        <div class="lg:col-span-5 space-y-4">
+          <div class="bg-white rounded-2xl border border-slate-200/90 shadow-sm flex flex-col h-[740px]">
+            
+            <!-- List Header -->
+            <div class="p-4 border-b border-slate-200/80 bg-slate-50/60 rounded-t-2xl flex items-center justify-between">
+              <div>
+                <h3 class="text-sm font-extrabold text-slate-900 flex items-center gap-2">
+                  <span>4. 検品確認リスト</span>
+                  <span id="listTotalKindsBadge" class="bg-indigo-100 text-indigo-700 text-xs px-2 py-0.5 rounded-full font-bold">0品目</span>
+                </h3>
+                <p class="text-xs text-slate-500 mt-0.5">未送信の検品レコード</p>
+              </div>
+
+              <div class="text-right">
+                <div class="text-[10px] text-slate-400 font-bold uppercase">総検品数量</div>
+                <div id="listTotalQuantityBadge" class="text-xl font-black text-indigo-700 leading-tight">0 個</div>
+              </div>
+            </div>
+
+            <!-- Scrollable Draft Items -->
+            <div id="draftListContainer" class="flex-1 overflow-y-auto p-4 space-y-2.5 divide-y divide-slate-100">
+              <!-- Empty State -->
+              <div id="draftListEmpty" class="h-full flex flex-col items-center justify-center text-center p-8 text-slate-400 space-y-2">
+                <div class="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center text-slate-400">
+                  <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+                </div>
+                <div class="text-xs font-bold text-slate-600">未送信の検品実績はありません</div>
+                <p class="text-[11px] text-slate-400">左側のカメラまたは手動検索でスキャンしてください</p>
+              </div>
+            </div>
+
+            <!-- List Footer Actions: Clear All & Submit -->
+            <div class="p-4 border-t border-slate-200/80 bg-slate-50/70 rounded-b-2xl space-y-3">
+              <div class="flex items-center justify-between text-xs text-slate-600 font-medium">
+                <span>送信前チェック完了後、送信ボタンを押してください</span>
+                <button type="button" onclick="promptClearAllDrafts()" id="btnClearAllDrafts" class="text-rose-600 hover:text-rose-700 text-xs font-bold hover:underline flex items-center gap-1">
+                  <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                  <span>全消去</span>
+                </button>
+              </div>
+
+              <!-- 5. Submit to Google Apps Script Button -->
+              <button 
+                type="button" 
+                id="btnOpenSubmitModal" 
+                onclick="openSubmitModal()" 
+                disabled
+                class="w-full py-3.5 bg-emerald-600 hover:bg-emerald-700 disabled:bg-slate-300 disabled:cursor-not-allowed text-white font-black text-sm rounded-xl shadow-md transition flex items-center justify-center gap-2"
+              >
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/></svg>
+                <span>5. スプレッドシートへ送信 (作業時間入力)</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ========================================================================= -->
+    <!-- TAB 2: 管理者用「作業者別生産性ダッシュボード」（PIN 0120保護） -->
+    <!-- ========================================================================= -->
+    <section id="tab-productivity" class="hidden space-y-6">
+      
+      <!-- Security Lock Overlay (If not unlocked) -->
+      <div id="prodLockScreen" class="bg-white rounded-2xl p-8 border border-slate-200 max-w-md mx-auto text-center shadow-lg space-y-4 my-12">
+        <div class="w-14 h-14 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center mx-auto border border-indigo-100">
+          <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
+        </div>
+        <div>
+          <h3 class="text-base font-extrabold text-slate-900">管理者セキュリティロック</h3>
+          <p class="text-xs text-slate-500 mt-1">生産性集計・作業者ランキングを閲覧するにはパスワードを入力してください</p>
+        </div>
+
+        <div class="space-y-3">
+          <input 
+            type="password" 
+            id="prodPinInput" 
+            maxlength="8" 
+            placeholder="PINコード (初期: 0120)" 
+            onkeydown="if(event.key==='Enter') unlockProductivity()"
+            class="w-full text-center tracking-widest text-lg font-mono font-bold py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:border-indigo-600 focus:outline-none"
+          >
+          <button onclick="unlockProductivity()" class="w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-sm rounded-xl transition shadow-sm">
+            ロック解除
+          </button>
+        </div>
+      </div>
+
+      <!-- Unlocked Dashboard -->
+      <div id="prodDashboardContent" class="hidden space-y-6">
+        
+        <!-- Dashboard Header & Actions -->
+        <div class="bg-white rounded-2xl p-4 sm:p-6 border border-slate-200 shadow-xs flex flex-wrap items-center justify-between gap-4">
+          <div>
+            <h2 class="text-lg font-black text-slate-900 tracking-tight flex items-center gap-2">
+              <span>作業者別生産性ダッシュボード</span>
+              <span class="text-xs font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">認証済</span>
+            </h2>
+            <p class="text-xs text-slate-500 mt-0.5">総検品数量 ÷ 総作業時間 から算出された主要生産性KPI</p>
+          </div>
+
+          <div class="flex items-center gap-2">
+            <button onclick="loadSampleProductivityData()" class="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-lg border border-slate-200 transition">
+              サンプルデータ投入
+            </button>
+            <button onclick="window.print()" class="px-3 py-1.5 bg-white hover:bg-slate-100 text-slate-700 text-xs font-bold rounded-lg border border-slate-200 transition flex items-center gap-1.5 shadow-2xs">
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
+              <span>印刷 / PDF出力</span>
+            </button>
+            <button onclick="exportProductivityCSV()" class="px-3 py-1.5 bg-white hover:bg-slate-100 text-indigo-700 text-xs font-bold rounded-lg border border-indigo-200 transition flex items-center gap-1.5 shadow-2xs">
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+              <span>CSV保存</span>
+            </button>
+            <button onclick="promptClearProductivityData()" class="px-3 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-700 text-xs font-bold rounded-lg border border-rose-200 transition">
+              全データ消去
+            </button>
+          </div>
+        </div>
+
+        <!-- 4 KPI Cards -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <!-- KPI 1: 総検品数量 -->
+          <div class="bg-white rounded-2xl p-5 border border-slate-200 shadow-xs print-card">
+            <div class="text-xs font-bold text-slate-500 uppercase tracking-wider">総検品数量</div>
+            <div id="kpiTotalQty" class="text-2xl sm:text-3xl font-black text-indigo-700 mt-1">0 個</div>
+            <div class="text-[11px] text-slate-400 mt-1">集計期間内の確定実績</div>
+          </div>
+
+          <!-- KPI 2: 総検品作業時間 -->
+          <div class="bg-white rounded-2xl p-5 border border-slate-200 shadow-xs print-card">
+            <div class="text-xs font-bold text-slate-500 uppercase tracking-wider">総検品作業時間</div>
+            <div id="kpiTotalMinutes" class="text-2xl sm:text-3xl font-black text-slate-900 mt-1">0 分</div>
+            <div id="kpiTotalHours" class="text-[11px] text-slate-400 mt-1">(約 0.0 時間)</div>
+          </div>
+
+          <!-- KPI 3: 1点あたり検品時間 -->
+          <div class="bg-white rounded-2xl p-5 border border-slate-200 shadow-xs print-card">
+            <div class="text-xs font-bold text-slate-500 uppercase tracking-wider">1点あたり検品時間</div>
+            <div id="kpiSecPerItem" class="text-2xl sm:text-3xl font-black text-emerald-600 mt-1">0.0 秒</div>
+            <div class="text-[11px] text-slate-400 mt-1">総作業時間 ÷ 総数量</div>
+          </div>
+
+          <!-- KPI 4: 1時間あたり検品数量 -->
+          <div class="bg-white rounded-2xl p-5 border border-slate-200 shadow-xs print-card">
+            <div class="text-xs font-bold text-slate-500 uppercase tracking-wider">1時間あたり検品数量</div>
+            <div id="kpiItemsPerHour" class="text-2xl sm:text-3xl font-black text-indigo-600 mt-1">0 個/h</div>
+            <div class="text-[11px] text-slate-400 mt-1">生産ペース指標</div>
+          </div>
+        </div>
+
+        <!-- Weekly & Monthly Charts -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <!-- Chart 1: 週別検品数量 & 作業時間 -->
+          <div class="bg-white rounded-2xl p-5 border border-slate-200 shadow-xs print-card space-y-3">
+            <div class="flex items-center justify-between">
+              <h3 class="text-sm font-black text-slate-900 flex items-center gap-1.5">
+                <span>① 週別 検品数量・作業時間の推移</span>
+              </h3>
+              <span class="text-[11px] text-slate-400 font-medium">直近週データ</span>
+            </div>
+            <div id="weeklyChartContainer" class="h-60 flex items-center justify-center bg-slate-50 rounded-xl p-4 border border-slate-100">
+              <span class="text-xs text-slate-400">データがありません</span>
+            </div>
+          </div>
+
+          <!-- Chart 2: 月別検品推移 -->
+          <div class="bg-white rounded-2xl p-5 border border-slate-200 shadow-xs print-card space-y-3">
+            <div class="flex items-center justify-between">
+              <h3 class="text-sm font-black text-slate-900 flex items-center gap-1.5">
+                <span>② 月別 検品数量・平均ペース推移</span>
+              </h3>
+              <span class="text-[11px] text-slate-400 font-medium">月次トレンド</span>
+            </div>
+            <div id="monthlyChartContainer" class="h-60 flex items-center justify-center bg-slate-50 rounded-xl p-4 border border-slate-100">
+              <span class="text-xs text-slate-400">データがありません</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Worker Ranking Table -->
+        <div class="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden print-card">
+          <div class="p-4 sm:p-5 border-b border-slate-200 bg-slate-50/60 flex items-center justify-between">
+            <div>
+              <h3 class="text-sm font-black text-slate-900">④ 作業者別生産性ランキング</h3>
+              <p class="text-xs text-slate-500 mt-0.5">時間あたり数量（個/h）と1点あたり所要時間（秒）</p>
+            </div>
+            <span class="text-xs font-bold text-slate-500">集計結果</span>
+          </div>
+
+          <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs">
+              <thead class="bg-slate-100/70 text-slate-600 font-bold border-b border-slate-200">
+                <tr>
+                  <th class="py-3 px-4">順位</th>
+                  <th class="py-3 px-4">作業者名</th>
+                  <th class="py-3 px-4 text-right">総検品数量</th>
+                  <th class="py-3 px-4 text-right">総作業時間</th>
+                  <th class="py-3 px-4 text-right">1点あたり時間</th>
+                  <th class="py-3 px-4 text-right">1時間あたり数量</th>
+                </tr>
+              </thead>
+              <tbody id="workerRankingTbody" class="divide-y divide-slate-100">
+                <tr>
+                  <td colspan="6" class="py-8 text-center text-slate-400 font-medium">
+                    データがありません
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ========================================================================= -->
+    <!-- TAB 3: 設定・GAS連携コード -->
+    <!-- ========================================================================= -->
+    <section id="tab-settings" class="hidden space-y-6">
+      <div class="bg-white rounded-2xl p-6 border border-slate-200 shadow-xs space-y-4">
+        <h3 class="text-base font-black text-slate-900">Google Apps Script (GAS) 連携設定</h3>
+        <p class="text-xs text-slate-600 leading-relaxed">
+          自身が作成したGoogleスプレッドシートのWeb App URLを登録すると、スキャン結果が直接クラウドへ蓄積されます。
+        </p>
+
+        <div class="space-y-1.5">
+          <label class="text-xs font-bold text-slate-700">GASウェブアプリURL (exec)</label>
+          <div class="flex gap-2">
+            <input 
+              type="url" 
+              id="gasUrlInput" 
+              class="flex-1 px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-mono text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500" 
+              placeholder="https://script.google.com/macros/s/.../exec"
+            >
+            <button onclick="saveGasUrl()" class="px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs rounded-xl shadow-xs transition">
+              保存
+            </button>
+          </div>
+        </div>
+
+        <div class="pt-2 flex items-center justify-between text-xs border-t border-slate-100">
+          <span class="text-slate-500">マスタ件数: <span id="settingsMasterCount" class="font-bold text-slate-800">16件</span></span>
+          <button onclick="refreshMaster(true)" class="text-indigo-600 hover:underline font-bold">マスタを再同期</button>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ========================================================================= -->
+  <!-- MODAL: 5. スプレッドシートへ送信 (作業者名 & 作業時間入力) -->
+  <!-- ========================================================================= -->
+  <div id="modalSubmit" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl p-6 max-w-md w-full shadow-2xl space-y-4 border border-slate-100">
+      <div class="text-center">
+        <div class="w-12 h-12 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center mx-auto mb-2 border border-emerald-100">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/></svg>
+        </div>
+        <h3 class="text-lg font-black text-slate-900">5. スプレッドシートへ送信</h3>
+        <p class="text-xs text-slate-500 mt-0.5">本日の検品作業時間を入力してまとめて送信します</p>
+      </div>
+
+      <div class="bg-slate-50 p-3.5 rounded-xl border border-slate-200 text-xs space-y-2">
+        <div class="flex justify-between text-slate-600">
+          <span>送信対象品目数:</span>
+          <span id="submitModalRecordCount" class="font-bold text-slate-900 bg-white px-2 py-0.5 rounded border border-slate-200">0 商品</span>
+        </div>
+        <div class="flex justify-between text-slate-600">
+          <span>総検品数量:</span>
+          <span id="submitModalTotalQty" class="font-black text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded border border-indigo-100 text-sm">0 個</span>
+        </div>
+      </div>
+
+      <!-- Worker Input in Modal -->
+      <div class="space-y-1.5">
+        <label class="text-xs font-bold text-slate-700">記録する作業者名</label>
+        <input type="text" id="modalWorkerInput" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold text-slate-800 focus:outline-none focus:border-indigo-600" value="山田">
+      </div>
+
+      <!-- Work Minutes Input -->
+      <div class="space-y-2">
+        <div class="flex items-center justify-between">
+          <label class="text-xs font-bold text-slate-700">本日の作業時間（分単位）</label>
+          <span class="text-[11px] text-slate-400">生産性集計に使用</span>
+        </div>
+        <div class="flex items-center gap-2">
+          <input 
+            type="number" 
+            id="workMinutesInput" 
+            min="0" 
+            max="1440" 
+            value="60" 
+            class="flex-1 text-center text-2xl font-black py-2 bg-slate-50 border border-slate-200 rounded-xl focus:border-indigo-600 focus:outline-none text-slate-900"
+          >
+          <span class="text-sm font-bold text-slate-600">分</span>
+        </div>
+        <!-- Quick minute buttons -->
+        <div class="grid grid-cols-6 gap-1.5">
+          <button type="button" onclick="setWorkMinutes(15)" class="py-1 bg-slate-100 hover:bg-slate-200 text-xs font-bold rounded text-slate-700">15分</button>
+          <button type="button" onclick="setWorkMinutes(30)" class="py-1 bg-slate-100 hover:bg-slate-200 text-xs font-bold rounded text-slate-700">30分</button>
+          <button type="button" onclick="setWorkMinutes(45)" class="py-1 bg-slate-100 hover:bg-slate-200 text-xs font-bold rounded text-slate-700">45分</button>
+          <button type="button" onclick="setWorkMinutes(60)" class="py-1 bg-slate-100 hover:bg-slate-200 text-xs font-bold rounded text-slate-700">60分</button>
+          <button type="button" onclick="setWorkMinutes(90)" class="py-1 bg-slate-100 hover:bg-slate-200 text-xs font-bold rounded text-slate-700">90分</button>
+          <button type="button" onclick="setWorkMinutes(120)" class="py-1 bg-slate-100 hover:bg-slate-200 text-xs font-bold rounded text-slate-700">120分</button>
+        </div>
+      </div>
+
+      <!-- Action buttons -->
+      <div class="space-y-2 pt-2">
+        <button id="btnExecuteSubmitWithTime" onclick="executeSubmit(true)" class="w-full py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm rounded-xl shadow-md transition flex items-center justify-center gap-2">
+          <span>作業時間を含めてまとめて送信</span>
+        </button>
+        <button id="btnExecuteSubmitSkipTime" onclick="executeSubmit(false)" class="w-full py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 font-semibold text-xs rounded-xl transition">
+          作業時間をスキップして実績のみ送信
+        </button>
+        <button onclick="closeSubmitModal()" class="w-full py-1.5 text-slate-400 hover:text-slate-600 text-xs transition">
+          キャンセル
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- In-app Clear Confirmation Modal -->
+  <div id="modalClearConfirm" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl p-6 max-w-sm w-full shadow-2xl space-y-4 border border-slate-100">
+      <div class="text-center">
+        <div class="w-12 h-12 rounded-full bg-rose-50 text-rose-600 flex items-center justify-center mx-auto mb-2">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+        </div>
+        <h3 id="clearConfirmTitle" class="text-base font-extrabold text-slate-900">確認</h3>
+        <p id="clearConfirmMessage" class="text-xs text-slate-500 mt-1">消去してよろしいですか？</p>
+      </div>
+      <div class="flex gap-2 pt-2">
+        <button onclick="closeClearConfirmModal()" class="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl transition">
+          キャンセル
+        </button>
+        <button id="btnClearConfirmAction" class="flex-1 py-2.5 bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold rounded-xl shadow-xs transition">
+          消去する
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- JAVASCRIPT LOGIC (Self-Contained & Optimized for PC USB Webcam) -->
+  <!-- ========================================================================= -->
+  <script>
+    // Audio Feedback using Web Audio API
+    function playSound(type) {
+      try {
+        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+        if (!AudioCtx) return;
+        const ctx = new AudioCtx();
+        if (type === 'scan') {
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(1760, ctx.currentTime);
+          gain.gain.setValueAtTime(0.15, ctx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.1);
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+          osc.start();
+          osc.stop(ctx.currentTime + 0.1);
+        } else if (type === 'confirm') {
+          const osc1 = ctx.createOscillator();
+          const osc2 = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc1.frequency.setValueAtTime(880, ctx.currentTime);
+          osc2.frequency.setValueAtTime(1318.5, ctx.currentTime + 0.08);
+          gain.gain.setValueAtTime(0.18, ctx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.22);
+          osc1.connect(gain);
+          osc2.connect(gain);
+          gain.connect(ctx.destination);
+          osc1.start();
+          osc1.stop(ctx.currentTime + 0.08);
+          osc2.start(ctx.currentTime + 0.08);
+          osc2.stop(ctx.currentTime + 0.22);
+        }
+      } catch (e) {}
+    }
+
+    // Default master items
+    const DEFAULT_MASTER = [
+      { code: 'RMB-001', name1: 'ROMBO', name2: 'BLK WHT XS', size: 'XS', jan: '4580001230011' },
+      { code: 'RMB-002', name1: 'ROMBO', name2: 'BLK WHT S', size: 'S', jan: '4580001230028' },
+      { code: 'RMB-003', name1: 'ROMBO', name2: 'NVY RED M', size: 'M', jan: '4580001230035' },
+      { code: 'ITM-101', name1: 'プレミアムコットンTシャツ', name2: 'ホワイト / クルーネック', size: 'S', jan: '4901234567890' },
+      { code: 'ITM-102', name1: 'プレミアムコットンTシャツ', name2: 'ホワイト / クルーネック', size: 'M', jan: '4901234567891' },
+      { code: 'ITM-103', name1: 'プレミアムコットンTシャツ', name2: 'ホワイト / クルーネック', size: 'L', jan: '4901234567892' },
+      { code: 'ITM-104', name1: 'プレミアムコットンTシャツ', name2: 'ブラック / クルーネック', size: 'M', jan: '4901234567893' },
+      { code: 'ITM-105', name1: 'プレミアムコットンTシャツ', name2: 'ブラック / クルーネック', size: 'L', jan: '4901234567894' },
+      { code: 'ITM-201', name1: 'ストレッチテーパードチノ', name2: 'ベージュ / 防シワ加工', size: '30inch', jan: '4902345678901' },
+      { code: 'ITM-202', name1: 'ストレッチテーパードチノ', name2: 'オリーブ / 防シワ加工', size: '32inch', jan: '4902345678902' },
+      { code: 'ITM-301', name1: '防風ライトマウンテンパーカー', name2: 'フォレストグリーン / 撥水', size: 'M', jan: '4903456789012' },
+      { code: 'ITM-302', name1: '防風ライトマウンテンパーカー', name2: 'コヨーテタン / 撥水', size: 'L', jan: '4903456789029' },
+      { code: 'ITM-401', name1: 'オーガニックソックス 3足組', name2: 'モノトーンアソート', size: '25-27cm', jan: '4904567890123' },
+      { code: 'ITM-501', name1: '14ozキャンバストートバッグ', name2: 'ナチュラル×ネイビー', size: 'Free', jan: '4905678901234' },
+      { code: 'ITM-601', name1: 'ウォッシャブルメリノセーター', name2: 'チャコールグレー / ハイゲージ', size: 'L', jan: '4906789012345' },
+      { code: 'ITM-701', name1: 'リバーシブルバケットハット', name2: 'ブラック×カーキ / UVカット', size: '58cm', jan: '4907890123456' }
+    ];
+
+    const STORAGE_KEY = {
+      MASTER: 'gas_insp_master',
+      DRAFTS: 'gas_insp_drafts',
+      WORKER: 'gas_insp_worker',
+      GAS_URL: 'gas_insp_url',
+      HISTORY: 'gas_insp_history',
+      WORK_TIMES: 'gas_insp_work_times'
+    };
+
+    let masterItems = [];
+    let draftRecords = [];
+    let activeScannedItem = null;
+    let isAwaitingQuantity = false;
+    let html5QrScanner = null;
+    let isCameraActive = false;
+    let selectedCameraId = '';
+    let lastScannedBarcode = { code: '', time: 0 };
+    let isProdUnlocked = false;
+
+    // On Load
+    window.addEventListener('DOMContentLoaded', () => {
+      loadStorage();
+      setupSearchEvents();
+      setupGlobalHotkeys();
+      updateDraftUI();
+      initCameraDevices();
+      refreshMaster(false);
+    });
+
+    function loadStorage() {
+      try {
+        const m = localStorage.getItem(STORAGE_KEY.MASTER);
+        masterItems = m ? JSON.parse(m) : DEFAULT_MASTER;
+      } catch { masterItems = DEFAULT_MASTER; }
+      if (!masterItems || masterItems.length === 0) masterItems = DEFAULT_MASTER;
+      document.getElementById('headerMasterCount').textContent = `マスタ: ${masterItems.length}件`;
+      document.getElementById('settingsMasterCount').textContent = `${masterItems.length}件`;
+
+      try {
+        const d = localStorage.getItem(STORAGE_KEY.DRAFTS);
+        draftRecords = d ? JSON.parse(d) : [];
+      } catch { draftRecords = []; }
+
+      const w = localStorage.getItem(STORAGE_KEY.WORKER) || '山田';
+      document.getElementById('workerInput').value = w;
+      document.getElementById('headerWorkerName').textContent = w;
+      document.getElementById('modalWorkerInput').value = w;
+
+      const u = localStorage.getItem(STORAGE_KEY.GAS_URL);
+      if (u) {
+        document.getElementById('gasUrlInput').value = u;
+        document.getElementById('headerGasStatus').textContent = 'GASクラウド同期中';
+      }
+    }
+
+    function saveDrafts() {
+      localStorage.setItem(STORAGE_KEY.DRAFTS, JSON.stringify(draftRecords));
+      updateDraftUI();
+    }
+
+    function showToast(msg) {
+      const el = document.getElementById('toastNotification');
+      document.getElementById('toastMessage').textContent = msg;
+      el.classList.remove('hidden');
+      setTimeout(() => el.classList.add('hidden'), 2500);
+    }
+
+    // Camera device initialization & J5create JVU250 prioritization
+    function initCameraDevices() {
+      if (typeof Html5Qrcode === 'undefined') return;
+      Html5Qrcode.getCameras().then(devices => {
+        const select = document.getElementById('cameraSelect');
+        select.innerHTML = '';
+        if (!devices || devices.length === 0) {
+          select.innerHTML = '<option value="">カメラが見つかりません</option>';
+          return;
+        }
+
+        let preferredId = devices[0].id;
+        devices.forEach((dev, idx) => {
+          const opt = document.createElement('option');
+          opt.value = dev.id;
+          let label = dev.label || `カメラ ${idx + 1}`;
+          if (/j5|jvu|usb|hd|250/i.test(label)) {
+            label += ' ★[推奨: J5create JVU250]';
+            preferredId = dev.id;
+          }
+          opt.textContent = label;
+          select.appendChild(opt);
+        });
+
+        selectedCameraId = preferredId;
+        select.value = preferredId;
+        startCamera(preferredId);
+      }).catch(err => {
+        console.warn('カメラ一覧取得失敗:', err);
+      });
+    }
+
+    function onCameraDeviceChange(devId) {
+      selectedCameraId = devId;
+      startCamera(devId);
+    }
+
+    function startCamera(devId) {
+      if (html5QrScanner) {
+        stopCamera().then(() => doStartCamera(devId));
+      } else {
+        doStartCamera(devId);
+      }
+    }
+
+    function doStartCamera(devId) {
+      const targetId = devId || selectedCameraId;
+      if (!targetId) return;
+
+      const qr = new Html5Qrcode('pc-webcam-reader');
+      html5QrScanner = qr;
+      const config = targetId ? targetId : { facingMode: 'environment' };
+
+      qr.start(
+        config,
+        {
+          fps: 20,
+          qrbox: { width: 340, height: 180 },
+          aspectRatio: 1.777778
+        },
+        (decodedText) => {
+          handleBarcodeScanned(decodedText);
+        },
+        () => {}
+      ).then(() => {
+        isCameraActive = true;
+        document.getElementById('cameraToggleText').textContent = 'カメラ停止';
+        document.getElementById('camStatusDot').className = 'w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse';
+      }).catch(err => {
+        console.warn('カメラ開始エラー:', err);
+        isCameraActive = false;
+        document.getElementById('cameraToggleText').textContent = 'カメラ開始';
+      });
+    }
+
+    function stopCamera() {
+      if (html5QrScanner) {
+        return html5QrScanner.stop().then(() => {
+          html5QrScanner.clear();
+          html5QrScanner = null;
+          isCameraActive = false;
+          document.getElementById('cameraToggleText').textContent = 'カメラ開始';
+          document.getElementById('camStatusDot').className = 'w-2.5 h-2.5 rounded-full bg-slate-500';
+        }).catch(() => {});
+      }
+      return Promise.resolve();
+    }
+
+    function toggleCamera() {
+      if (isCameraActive) {
+        stopCamera();
+      } else {
+        startCamera(selectedCameraId);
+      }
+    }
+
+    // Step 1: Barcode Scanned -> Beep -> Auto-focus Tenkey Quantity Input
+    function handleBarcodeScanned(barcode) {
+      if (isAwaitingQuantity) return; // Do not scan another item while typing quantity!
+
+      const now = Date.now();
+      if (barcode === lastScannedBarcode.code && (now - lastScannedBarcode.time < 1200)) {
+        return;
+      }
+      lastScannedBarcode = { code: barcode, time: now };
+
+      const matched = masterItems.find(m => 
+        m.jan.trim() === barcode.trim() || m.code.toLowerCase() === barcode.trim().toLowerCase()
+      );
+
+      const target = matched || {
+        code: barcode,
+        name1: `未登録商品 (${barcode})`,
+        name2: 'マスタ未登録',
+        size: '-',
+        jan: barcode
+      };
+
+      playSound('scan');
+      setActiveScannedItem(target);
+    }
+
+    function setActiveScannedItem(item) {
+      activeScannedItem = item;
+      isAwaitingQuantity = true;
+
+      document.getElementById('activeItemCode').textContent = item.code;
+      document.getElementById('activeItemName1').textContent = item.name1;
+      document.getElementById('activeItemName2').textContent = `${item.name2} · ${item.size}`;
+      document.getElementById('activeItemSize').textContent = item.size;
+      document.getElementById('activeItemJan').textContent = item.jan;
+
+      const qtyInput = document.getElementById('tenkeyQtyInput');
+      qtyInput.value = 1;
+
+      document.getElementById('cockpitIdleState').classList.add('hidden');
+      document.getElementById('cockpitActiveState').classList.remove('hidden');
+
+      setTimeout(() => {
+        qtyInput.focus();
+        qtyInput.select();
+      }, 50);
+    }
+
+    function cancelActiveScan() {
+      activeScannedItem = null;
+      isAwaitingQuantity = false;
+      document.getElementById('cockpitActiveState').classList.add('hidden');
+      document.getElementById('cockpitIdleState').classList.remove('hidden');
+    }
+
+    function adjustTenkeyQty(delta) {
+      const input = document.getElementById('tenkeyQtyInput');
+      let val = (parseInt(input.value, 10) || 1) + delta;
+      if (val < 1) val = 1;
+      input.value = val;
+    }
+
+    function setTenkeyQty(val) {
+      document.getElementById('tenkeyQtyInput').value = val;
+    }
+
+    function handleTenkeyKeyDown(e) {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        confirmActiveItem();
+      } else if (e.key === 'Escape') {
+        cancelActiveScan();
+      }
+    }
+
+    // Step 2 & 3: Commit Quantity -> Chime -> Re-arm Camera scanning
+    function confirmActiveItem() {
+      if (!activeScannedItem) return;
+      const input = document.getElementById('tenkeyQtyInput');
+      const qty = Math.max(1, parseInt(input.value, 10) || 1);
+      const worker = document.getElementById('workerInput').value.trim() || '山田';
+      const today = new Date().toISOString().substring(0, 10);
+
+      // Check if existing record in drafts
+      const existingIdx = draftRecords.findIndex(r => r.code === activeScannedItem.code);
+      if (existingIdx >= 0) {
+        draftRecords[existingIdx].quantity += qty;
+      } else {
+        draftRecords.unshift({
+          id: 'draft_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4),
+          date: today,
+          worker: worker,
+          code: activeScannedItem.code,
+          name1: activeScannedItem.name1,
+          name2: activeScannedItem.name2,
+          size: activeScannedItem.size,
+          jan: activeScannedItem.jan,
+          quantity: qty
+        });
+      }
+
+      saveDrafts();
+      playSound('confirm');
+      showToast(`${activeScannedItem.name1} (${qty}個) を追加しました`);
+
+      // Step 3: Re-arm camera scanning for next item!
+      cancelActiveScan();
+    }
+
+    // Drafts UI
+    function updateDraftUI() {
+      const count = draftRecords.length;
+      const totalQty = draftRecords.reduce((sum, r) => sum + r.quantity, 0);
+
+      document.getElementById('listTotalKindsBadge').textContent = `${count}品目`;
+      document.getElementById('listTotalQuantityBadge').textContent = `${totalQty.toLocaleString()} 個`;
+
+      const badge = document.getElementById('badgeDraftCount');
+      if (count > 0) {
+        badge.textContent = count;
+        badge.classList.remove('hidden');
+        document.getElementById('btnOpenSubmitModal').disabled = false;
+      } else {
+        badge.classList.add('hidden');
+        document.getElementById('btnOpenSubmitModal').disabled = true;
+      }
+
+      const container = document.getElementById('draftListContainer');
+      const emptyBox = document.getElementById('draftListEmpty');
+
+      if (count === 0) {
+        container.innerHTML = '';
+        container.appendChild(emptyBox);
+        return;
+      }
+
+      container.innerHTML = draftRecords.map(item => `
+        <div class="p-3 bg-slate-50 hover:bg-indigo-50/50 rounded-xl border border-slate-200/90 transition flex items-center justify-between gap-2">
+          <div class="pr-2 truncate flex-1 min-w-0">
+            <div class="flex items-center gap-1.5">
+              <span class="text-xs font-bold text-indigo-700 font-mono bg-white px-1.5 py-0.2 rounded border border-slate-200">${escapeHtml(item.code)}</span>
+              <span class="text-xs font-bold text-slate-900 truncate">${escapeHtml(item.name1)}</span>
+            </div>
+            <div class="flex items-center gap-1.5 mt-1.5 flex-wrap">
+              <span class="bg-amber-100/90 border border-amber-300 px-2 py-0.5 rounded text-xs font-black text-amber-950">${escapeHtml(item.name2)}</span>
+              <span class="bg-indigo-100/90 border border-indigo-300 px-2 py-0.5 rounded text-xs font-black text-indigo-950">${escapeHtml(item.size)}</span>
+            </div>
+          </div>
+          
+          <div class="flex items-center gap-1.5 flex-shrink-0">
+            <button onclick="adjustDraftQty('${item.id}', -1)" class="w-7 h-7 rounded-lg bg-white hover:bg-slate-100 text-slate-700 font-bold border border-slate-200 shadow-2xs flex items-center justify-center">-</button>
+            <span class="w-10 text-center font-black text-slate-900 text-sm">${item.quantity}</span>
+            <button onclick="adjustDraftQty('${item.id}', 1)" class="w-7 h-7 rounded-lg bg-white hover:bg-slate-100 text-indigo-700 font-bold border border-slate-200 shadow-2xs flex items-center justify-center">+</button>
+            <button onclick="deleteDraftItem('${item.id}')" class="p-1.5 text-slate-400 hover:text-rose-600 rounded-lg hover:bg-rose-50 ml-1 transition" title="削除">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+            </button>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function adjustDraftQty(id, delta) {
+      const idx = draftRecords.findIndex(r => r.id === id);
+      if (idx >= 0) {
+        draftRecords[idx].quantity += delta;
+        if (draftRecords[idx].quantity <= 0) {
+          draftRecords.splice(idx, 1);
+        }
+        saveDrafts();
+      }
+    }
+
+    function deleteDraftItem(id) {
+      draftRecords = draftRecords.filter(r => r.id !== id);
+      saveDrafts();
+    }
+
+    function promptClearAllDrafts() {
+      if (draftRecords.length === 0) return;
+      openClearConfirmModal('確認リストの消去', '未送信の検品実績をすべて消去しますか？', () => {
+        draftRecords = [];
+        saveDrafts();
+        showToast('確認リストを全消去しました');
+      });
+    }
+
+    // Modal Clear Confirm
+    let clearConfirmCallback = null;
+    function openClearConfirmModal(title, msg, onConfirm) {
+      document.getElementById('clearConfirmTitle').textContent = title;
+      document.getElementById('clearConfirmMessage').textContent = msg;
+      clearConfirmCallback = onConfirm;
+      document.getElementById('btnClearConfirmAction').onclick = () => {
+        if (clearConfirmCallback) clearConfirmCallback();
+        closeClearConfirmModal();
+      };
+      document.getElementById('modalClearConfirm').classList.remove('hidden');
+    }
+    function closeClearConfirmModal() {
+      document.getElementById('modalClearConfirm').classList.add('hidden');
+      clearConfirmCallback = null;
+    }
+
+    // Step 5: Submit Modal
+    function openSubmitModal() {
+      if (draftRecords.length === 0) return;
+      const count = draftRecords.length;
+      const totalQty = draftRecords.reduce((sum, r) => sum + r.quantity, 0);
+
+      document.getElementById('submitModalRecordCount').textContent = `${count} 商品`;
+      document.getElementById('submitModalTotalQty').textContent = `${totalQty.toLocaleString()} 個`;
+      document.getElementById('modalWorkerInput').value = document.getElementById('workerInput').value.trim() || '山田';
+      document.getElementById('modalSubmit').classList.remove('hidden');
+    }
+
+    function closeSubmitModal() {
+      document.getElementById('modalSubmit').classList.add('hidden');
+    }
+
+    function setWorkMinutes(mins) {
+      document.getElementById('workMinutesInput').value = mins;
+    }
+
+    function executeSubmit(includeTime) {
+      const worker = document.getElementById('modalWorkerInput').value.trim() || '山田';
+      localStorage.setItem(STORAGE_KEY.WORKER, worker);
+      document.getElementById('workerInput').value = worker;
+      document.getElementById('headerWorkerName').textContent = worker;
+
+      const mins = includeTime ? (parseInt(document.getElementById('workMinutesInput').value, 10) || 0) : 0;
+      const today = new Date().toISOString().substring(0, 10);
+      const nowStr = new Date().toLocaleString('ja-JP');
+
+      const workTimeRecord = (includeTime && mins > 0) ? {
+        date: today,
+        worker: worker,
+        minutes: mins,
+        timestamp: nowStr
+      } : null;
+
+      const gasUrl = document.getElementById('gasUrlInput').value.trim();
+
+      // Save locally to history & work times
+      let history = [];
+      try { history = JSON.parse(localStorage.getItem(STORAGE_KEY.HISTORY) || '[]'); } catch {}
+      history.push(...draftRecords.map(d => ({ ...d, worker: worker, timestamp: nowStr })));
+      localStorage.setItem(STORAGE_KEY.HISTORY, JSON.stringify(history));
+
+      if (workTimeRecord) {
+        let wt = [];
+        try { wt = JSON.parse(localStorage.getItem(STORAGE_KEY.WORK_TIMES) || '[]'); } catch {}
+        wt.push(workTimeRecord);
+        localStorage.setItem(STORAGE_KEY.WORK_TIMES, JSON.stringify(wt));
+      }
+
+      // If GAS Web App URL exists, send via fetch
+      if (gasUrl) {
+        fetch(gasUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+          body: JSON.stringify({
+            action: 'submitReport',
+            records: draftRecords,
+            workTime: workTimeRecord
+          })
+        }).catch(err => console.warn('GAS POST失敗:', err));
+      }
+
+      draftRecords = [];
+      saveDrafts();
+      closeSubmitModal();
+      showToast('スプレッドシートへ送信完了しました！');
+    }
+
+    // Incremental AND Search
+    function setupSearchEvents() {
+      const searchInput = document.getElementById('searchInput');
+      const suggestBox = document.getElementById('suggestBox');
+      const clearBtn = document.getElementById('btnClearSearch');
+
+      searchInput.addEventListener('input', (e) => {
+        const val = e.target.value.trim().toLowerCase();
+        if (val.length > 0) {
+          clearBtn.classList.remove('hidden');
+          renderSuggestions(val);
+        } else {
+          clearBtn.classList.add('hidden');
+          suggestBox.classList.add('hidden');
+        }
+      });
+    }
+
+    function clearSearch() {
+      const searchInput = document.getElementById('searchInput');
+      searchInput.value = '';
+      document.getElementById('btnClearSearch').classList.add('hidden');
+      document.getElementById('suggestBox').classList.add('hidden');
+      searchInput.focus();
+    }
+
+    function renderSuggestions(query) {
+      const suggestBox = document.getElementById('suggestBox');
+      const terms = query.toLowerCase().split(/[\s\u3000]+/).filter(t => t.length > 0);
+      if (terms.length === 0) {
+        suggestBox.classList.add('hidden');
+        return;
+      }
+
+      const filtered = masterItems.filter(item => {
+        const combined = `${item.code} ${item.name1} ${item.name2} ${item.size} ${item.jan}`.toLowerCase();
+        return terms.every(t => combined.includes(t));
+      }).slice(0, 20);
+
+      if (filtered.length === 0) {
+        suggestBox.innerHTML = '<div class="p-3 text-center text-xs text-slate-400">一致する商品がありません</div>';
+        suggestBox.classList.remove('hidden');
+        return;
+      }
+
+      suggestBox.innerHTML = `
+        <div class="px-3 py-1.5 bg-slate-50 text-[11px] text-slate-500 font-bold sticky top-0 border-b border-slate-100 flex justify-between">
+          <span>候補: ${filtered.length}件 (最大20件)</span>
+          <span class="text-indigo-600">クリックで数量入力へ</span>
+        </div>
+      ` + filtered.map(item => `
+        <div onclick="selectSearchItem('${item.code}')" class="p-3 hover:bg-indigo-50/80 cursor-pointer transition flex items-center justify-between group">
+          <div class="pr-3 flex-1 min-w-0">
+            <div class="flex items-center gap-2">
+              <span class="text-xs font-bold text-indigo-700 font-mono bg-indigo-50 px-2 py-0.5 rounded border border-indigo-100">${escapeHtml(item.code)}</span>
+              <span class="text-sm font-bold text-slate-900 truncate">${escapeHtml(item.name1)}</span>
+            </div>
+            <div class="flex items-center gap-2 mt-1.5 flex-wrap">
+              <span class="inline-flex items-center gap-1.5 bg-amber-50 border border-amber-200 px-2.5 py-0.5 rounded-lg text-amber-950 font-black text-xs sm:text-sm">
+                <span class="text-[10px] text-amber-700 font-bold">カラー:</span>
+                <span>${escapeHtml(item.name2)}</span>
+              </span>
+              <span class="inline-flex items-center gap-1.5 bg-indigo-50 border-2 border-indigo-300 px-2.5 py-0.5 rounded-lg text-indigo-950 font-black text-sm sm:text-base">
+                <span class="text-[10px] text-indigo-600 font-bold">サイズ:</span>
+                <span>${escapeHtml(item.size)}</span>
+              </span>
+            </div>
+            <div class="text-[10px] text-slate-400 font-mono mt-1">JAN: ${escapeHtml(item.jan)}</div>
+          </div>
+          <button type="button" class="px-3 py-1.5 bg-indigo-600 group-hover:bg-indigo-700 text-white text-xs font-bold rounded-xl shadow-2xs flex-shrink-0">
+            選択 ➜
+          </button>
+        </div>
+      `).join('');
+
+      suggestBox.classList.remove('hidden');
+    }
+
+    function selectSearchItem(code) {
+      document.getElementById('searchInput').blur();
+      document.getElementById('suggestBox').classList.add('hidden');
+      document.getElementById('searchInput').value = '';
+      document.getElementById('btnClearSearch').classList.add('hidden');
+
+      const item = masterItems.find(m => m.code === code);
+      if (item) {
+        setActiveScannedItem(item);
+      }
+    }
+
+    // Global Hotkeys
+    function setupGlobalHotkeys() {
+      window.addEventListener('keydown', (e) => {
+        if (e.ctrlKey && e.key === 'Enter') {
+          e.preventDefault();
+          if (draftRecords.length > 0) openSubmitModal();
+        }
+      });
+    }
+
+    function setQuickWorker(name) {
+      document.getElementById('workerInput').value = name;
+      localStorage.setItem(STORAGE_KEY.WORKER, name);
+      document.getElementById('headerWorkerName').textContent = name;
+      document.getElementById('modalWorkerInput').value = name;
+    }
+
+    function saveGasUrl() {
+      const url = document.getElementById('gasUrlInput').value.trim();
+      localStorage.setItem(STORAGE_KEY.GAS_URL, url);
+      showToast('GAS URLを保存しました');
+    }
+
+    function refreshMaster(showMsg) {
+      const url = localStorage.getItem(STORAGE_KEY.GAS_URL);
+      if (url) {
+        fetch(url + '?action=getMaster')
+          .then(res => res.json())
+          .then(data => {
+            if (data && data.success && Array.isArray(data.items)) {
+              masterItems = data.items;
+              localStorage.setItem(STORAGE_KEY.MASTER, JSON.stringify(data.items));
+              loadStorage();
+              if (showMsg) showToast(`商品マスタを最新化しました (${data.items.length}件)`);
+            }
+          }).catch(() => {
+            if (showMsg) showToast('マスタ再同期に失敗しました（オフラインまたはURL設定不備）');
+          });
+      } else if (showMsg) {
+        showToast('商品マスタ（16件）を再読み込みしました');
+      }
+    }
+
+    // Tab Switching
+    function switchTab(tab) {
+      document.getElementById('tab-workstation').classList.add('hidden');
+      document.getElementById('tab-productivity').classList.add('hidden');
+      document.getElementById('tab-settings').classList.add('hidden');
+
+      document.getElementById('nav-workstation').className = 'px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 text-slate-600 hover:text-slate-900';
+      document.getElementById('nav-productivity').className = 'px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 text-slate-600 hover:text-slate-900';
+      document.getElementById('nav-settings').className = 'px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 text-slate-600 hover:text-slate-900';
+
+      if (tab === 'workstation') {
+        document.getElementById('tab-workstation').classList.remove('hidden');
+        document.getElementById('nav-workstation').className = 'px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 bg-white text-indigo-700 shadow-xs border border-slate-200/80';
+        if (!isCameraActive && selectedCameraId) startCamera(selectedCameraId);
+      } else if (tab === 'productivity') {
+        document.getElementById('tab-productivity').classList.remove('hidden');
+        document.getElementById('nav-productivity').className = 'px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 bg-white text-indigo-700 shadow-xs border border-slate-200/80';
+        renderProductivity();
+      } else if (tab === 'settings') {
+        document.getElementById('tab-settings').classList.remove('hidden');
+        document.getElementById('nav-settings').className = 'px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 bg-white text-indigo-700 shadow-xs border border-slate-200/80';
+      }
+    }
+
+    // Productivity Unlock & Calculations
+    function unlockProductivity() {
+      const pin = document.getElementById('prodPinInput').value.trim();
+      if (pin === '0120') {
+        isProdUnlocked = true;
+        document.getElementById('prodLockScreen').classList.add('hidden');
+        document.getElementById('prodDashboardContent').classList.remove('hidden');
+        renderProductivity();
+      } else {
+        alert('PINコードが正しくありません (初期PIN: 0120)');
+      }
+    }
+
+    function renderProductivity() {
+      if (!isProdUnlocked) return;
+      let history = [];
+      let workTimes = [];
+      try { history = JSON.parse(localStorage.getItem(STORAGE_KEY.HISTORY) || '[]'); } catch {}
+      try { workTimes = JSON.parse(localStorage.getItem(STORAGE_KEY.WORK_TIMES) || '[]'); } catch {}
+
+      const totalQty = history.reduce((sum, h) => sum + h.quantity, 0);
+      const totalMinutes = workTimes.reduce((sum, w) => sum + w.minutes, 0);
+      const totalSeconds = totalMinutes * 60;
+
+      const secPerItem = totalQty > 0 ? (totalSeconds / totalQty).toFixed(1) : '0.0';
+      const itemsPerHour = totalMinutes > 0 ? ((totalQty / totalMinutes) * 60).toFixed(1) : '0.0';
+
+      document.getElementById('kpiTotalQty').textContent = `${totalQty.toLocaleString()} 個`;
+      document.getElementById('kpiTotalMinutes').textContent = `${totalMinutes.toLocaleString()} 分`;
+      document.getElementById('kpiTotalHours').textContent = `(約 ${(totalMinutes / 60).toFixed(1)} 時間)`;
+      document.getElementById('kpiSecPerItem').textContent = `${secPerItem} 秒`;
+      document.getElementById('kpiItemsPerHour').textContent = `${itemsPerHour} 個/h`;
+
+      // Render Charts & Worker ranking table
+      renderWorkerRanking(history, workTimes);
+      renderCharts(history, workTimes);
+    }
+
+    function renderWorkerRanking(history, workTimes) {
+      const tbody = document.getElementById('workerRankingTbody');
+      const workerMap = {};
+
+      history.forEach(h => {
+        const w = h.worker || '未設定';
+        if (!workerMap[w]) workerMap[w] = { worker: w, quantity: 0, minutes: 0 };
+        workerMap[w].quantity += h.quantity;
+      });
+
+      workTimes.forEach(wt => {
+        const w = wt.worker || '未設定';
+        if (!workerMap[w]) workerMap[w] = { worker: w, quantity: 0, minutes: 0 };
+        workerMap[w].minutes += wt.minutes;
+      });
+
+      const list = Object.values(workerMap).map(w => {
+        const secPerItem = w.quantity > 0 ? (w.minutes * 60 / w.quantity).toFixed(1) : '0.0';
+        const itemsPerHour = w.minutes > 0 ? (w.quantity / w.minutes * 60).toFixed(1) : '0.0';
+        return { ...w, secPerItem, itemsPerHour };
+      }).sort((a, b) => parseFloat(b.itemsPerHour) - parseFloat(a.itemsPerHour));
+
+      if (list.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6" class="py-8 text-center text-slate-400">検品データがありません</td></tr>';
+        return;
+      }
+
+      tbody.innerHTML = list.map((w, idx) => `
+        <tr class="hover:bg-slate-50 transition">
+          <td class="py-3 px-4 font-black ${idx === 0 ? 'text-amber-500' : idx === 1 ? 'text-slate-400' : idx === 2 ? 'text-amber-700' : 'text-slate-600'}">
+            #${idx + 1}
+          </td>
+          <td class="py-3 px-4 font-bold text-slate-900">${escapeHtml(w.worker)}</td>
+          <td class="py-3 px-4 text-right font-black text-indigo-700">${w.quantity.toLocaleString()} 個</td>
+          <td class="py-3 px-4 text-right font-semibold text-slate-700">${w.minutes} 分</td>
+          <td class="py-3 px-4 text-right font-bold text-emerald-600">${w.secPerItem} 秒/点</td>
+          <td class="py-3 px-4 text-right font-black text-indigo-900 bg-indigo-50/50">${w.itemsPerHour} 個/h</td>
+        </tr>
+      `).join('');
+    }
+
+    function renderCharts(history, workTimes) {
+      const weeklyContainer = document.getElementById('weeklyChartContainer');
+      const monthlyContainer = document.getElementById('monthlyChartContainer');
+
+      if (history.length === 0) {
+        weeklyContainer.innerHTML = '<span class="text-xs text-slate-400 font-medium">データがありません</span>';
+        monthlyContainer.innerHTML = '<span class="text-xs text-slate-400 font-medium">データがありません</span>';
+        return;
+      }
+
+      // Group by date/week
+      const dateMap = {};
+      history.forEach(h => {
+        dateMap[h.date] = (dateMap[h.date] || 0) + h.quantity;
+      });
+
+      const dates = Object.keys(dateMap).sort().slice(-7);
+      const maxVal = Math.max(...dates.map(d => dateMap[d]), 1);
+
+      weeklyContainer.innerHTML = `
+        <div class="w-full h-full flex items-end justify-between gap-3 pt-6">
+          ${dates.map(d => {
+            const val = dateMap[d];
+            const pct = Math.round((val / maxVal) * 100);
+            return `
+              <div class="flex-1 flex flex-col items-center gap-1.5 h-full justify-end group">
+                <span class="text-[10px] font-black text-indigo-700 opacity-0 group-hover:opacity-100 transition">${val}個</span>
+                <div class="w-full bg-indigo-500 hover:bg-indigo-600 rounded-t-lg transition-all" style="height: ${Math.max(pct, 8)}%"></div>
+                <span class="text-[10px] font-bold text-slate-500 whitespace-nowrap">${d.slice(5)}</span>
+              </div>
+            `;
+          }).join('')}
+        </div>
+      `;
+
+      monthlyContainer.innerHTML = `
+        <div class="w-full h-full flex flex-col justify-center items-center text-center p-4">
+          <div class="text-2xl font-black text-indigo-600">${history.reduce((s, h) => s + h.quantity, 0)} 個</div>
+          <div class="text-xs text-slate-500 font-bold mt-1">今月累計検品実績</div>
+          <div class="text-[11px] text-emerald-600 font-semibold mt-0.5">平均検品ペース安定稼働中</div>
+        </div>
+      `;
+    }
+
+    function loadSampleProductivityData() {
+      const sampleHistory = [
+        { id: 's1', date: '2026-10-13', worker: '山田', code: 'ITM-101', name1: 'プレミアムコットンTシャツ', name2: 'ホワイト / クルーネック', size: 'S', jan: '4901234567890', quantity: 110, timestamp: '2026-10-13 16:30:00' },
+        { id: 's2', date: '2026-10-14', worker: '佐藤', code: 'ITM-201', name1: 'ストレッチテーパードチノ', name2: 'ベージュ / 防シワ加工', size: '30inch', jan: '4902345678901', quantity: 90, timestamp: '2026-10-14 17:00:00' },
+        { id: 's3', date: '2026-10-15', worker: '鈴木', code: 'ITM-401', name1: 'オーガニックソックス 3足組', name2: 'モノトーンアソート', size: '25-27cm', jan: '4904567890123', quantity: 180, timestamp: '2026-10-15 16:00:00' },
+        { id: 's4', date: '2026-10-20', worker: '山田', code: 'ITM-102', name1: 'プレミアムコットンTシャツ', name2: 'ホワイト / クルーネック', size: 'M', jan: '4901234567891', quantity: 140, timestamp: '2026-10-20 16:30:00' },
+        { id: 's5', date: '2026-10-21', worker: '佐藤', code: 'ITM-202', name1: 'ストレッチテーパードチノ', name2: 'オリーブ / 防シワ加工', size: '32inch', jan: '4902345678902', quantity: 105, timestamp: '2026-10-21 17:00:00' },
+        { id: 's6', date: '2026-10-22', worker: '鈴木', code: 'ITM-401', name1: 'オーガニックソックス 3足組', name2: 'モノトーンアソート', size: '25-27cm', jan: '4904567890123', quantity: 220, timestamp: '2026-10-22 16:20:00' },
+        { id: 's7', date: '2026-10-27', worker: '高橋', code: 'ITM-301', name1: '防風ライトマウンテンパーカー', name2: 'フォレストグリーン / 撥水', size: 'M', jan: '4903456789012', quantity: 125, timestamp: '2026-10-27 15:45:00' }
+      ];
+      const sampleWorkTimes = [
+        { date: '2026-10-13', worker: '山田', minutes: 55, timestamp: '2026-10-13 16:30:00' },
+        { date: '2026-10-14', worker: '佐藤', minutes: 60, timestamp: '2026-10-14 17:00:00' },
+        { date: '2026-10-15', worker: '鈴木', minutes: 75, timestamp: '2026-10-15 16:00:00' },
+        { date: '2026-10-20', worker: '山田', minutes: 70, timestamp: '2026-10-20 16:30:00' },
+        { date: '2026-10-21', worker: '佐藤', minutes: 65, timestamp: '2026-10-21 17:00:00' },
+        { date: '2026-10-22', worker: '鈴木', minutes: 90, timestamp: '2026-10-22 16:20:00' },
+        { date: '2026-10-27', worker: '高橋', minutes: 70, timestamp: '2026-10-27 15:45:00' }
+      ];
+
+      localStorage.setItem(STORAGE_KEY.HISTORY, JSON.stringify(sampleHistory));
+      localStorage.setItem(STORAGE_KEY.WORK_TIMES, JSON.stringify(sampleWorkTimes));
+      renderProductivity();
+      showToast('テスト用サンプルデータを投入しました');
+    }
+
+    function promptClearProductivityData() {
+      openClearConfirmModal('全データの消去', '蓄積された生産性データ・履歴をすべて初期化しますか？', () => {
+        localStorage.removeItem(STORAGE_KEY.HISTORY);
+        localStorage.removeItem(STORAGE_KEY.WORK_TIMES);
+        renderProductivity();
+        showToast('生産性データを全消去しました');
+      });
+    }
+
+    function exportProductivityCSV() {
+      let history = [];
+      try { history = JSON.parse(localStorage.getItem(STORAGE_KEY.HISTORY) || '[]'); } catch {}
+      if (history.length === 0) {
+        alert('出力対象のデータがありません');
+        return;
+      }
+      let csv = '報告日,作業者名,商品コード,品名1,品名2,サイズ,JANコード,数量,送信日時\n';
+      history.forEach(h => {
+        csv += `"${h.date}","${h.worker}","${h.code}","${h.name1}","${h.name2}","${h.size}","${h.jan}","${h.quantity}","${h.timestamp}"\n`;
+      });
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `検品報告実績_${new Date().toISOString().substring(0, 10)}.csv`;
+      a.click();
+    }
+
+    function escapeHtml(str) {
+      if (!str) return '';
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+  </script>
+</body>
+</html>
