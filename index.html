@@ -4,12 +4,10 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>検品報告・生産性管理システム | PC専用ワークステーション</title>
-<!-- Tailwind CSS CDN -->
-  <script src="https://tailwindcss.com"></script>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
   <!-- html5-qrcode CDN for USB HD & Webcams -->
-  <script>
-    document.write('<scr' + 'ipt src="https://unpkg.com' + '/html5-qrcode@2.3.8/html5-qrcode.min.js"></scr' + 'ipt>');
-  </script>
+  <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
   <style>
     @media print {
       body { background: white !important; }
@@ -54,7 +52,7 @@
             <span id="syncIndicator" class="inline-block w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
             <span id="headerMasterCount">マスタ読込中...</span>
             <span>·</span>
-            <span class="text-slate-700 font-bold">担当: <span id="headerWorkerName">未設定</span></span>
+            <span class="text-slate-700 font-bold">担当: <span id="headerWorkerName">山田</span></span>
             <span class="hidden sm:inline">·</span>
             <span id="headerGasStatus" class="hidden sm:inline text-slate-500 text-[11px]">セルフサービスGAS版</span>
           </p>
@@ -94,6 +92,7 @@
     <svg class="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
     <span id="toastMessage">完了しました</span>
   </div>
+
   <!-- Main Content Area: Wide Desktop Cockpit -->
   <main class="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8">
 
@@ -111,10 +110,13 @@
           </div>
           <div>
             <div class="text-[11px] font-bold text-slate-500 uppercase tracking-wider">作業ステーション担当者</div>
-            <div class="flex flex-wrap items-center gap-2 mt-0.5">
-              <input type="text" id="workerInput" placeholder="担当者名を入力" class="px-2.5 py-1 bg-slate-50 border border-slate-200 rounded-lg text-sm font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white w-32" value="">
-              <button type="button" onclick="registerQuickWorker()" class="px-2.5 py-1 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-bold shadow-2xs transition">＋登録</button>
-              <div id="quickWorkerButtons" class="flex flex-wrap gap-1"></div>
+            <div class="flex items-center gap-2 mt-0.5">
+              <input type="text" id="workerInput" class="px-2.5 py-1 bg-slate-50 border border-slate-200 rounded-lg text-sm font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white w-32" value="山田">
+              <div class="flex gap-1">
+                <button onclick="setQuickWorker('山田')" class="px-2 py-1 bg-slate-100 hover:bg-indigo-50 text-slate-700 hover:text-indigo-600 rounded text-xs font-semibold border border-slate-200">山田</button>
+                <button onclick="setQuickWorker('佐藤')" class="px-2 py-1 bg-slate-100 hover:bg-indigo-50 text-slate-700 hover:text-indigo-600 rounded text-xs font-semibold border border-slate-200">佐藤</button>
+                <button onclick="setQuickWorker('鈴木')" class="px-2 py-1 bg-slate-100 hover:bg-indigo-50 text-slate-700 hover:text-indigo-600 rounded text-xs font-semibold border border-slate-200">鈴木</button>
+              </div>
             </div>
           </div>
         </div>
@@ -179,6 +181,7 @@
                 読取完了後、自動で数量入力欄にフォーカスします。テンキーで数字を入力して [Enter] を押すだけで次へ進みます。
               </p>
             </div>
+
             <!-- Active Scanned Item Zone (shown when item is read) -->
             <div id="cockpitActiveState" class="hidden space-y-4">
               <div class="bg-white border-2 border-indigo-300 p-4 rounded-xl shadow-xs space-y-2.5">
@@ -303,8 +306,8 @@
                 <div id="listTotalQuantityBadge" class="text-xl font-black text-indigo-700 leading-tight">0 個</div>
               </div>
             </div>
-            
-                        <!-- Scrollable Draft Items -->
+
+            <!-- Scrollable Draft Items -->
             <div id="draftListContainer" class="flex-1 overflow-y-auto p-4 space-y-2.5 divide-y divide-slate-100">
               <!-- Empty State -->
               <div id="draftListEmpty" class="h-full flex flex-col items-center justify-center text-center p-8 text-slate-400 space-y-2">
@@ -343,6 +346,7 @@
 
       </div>
     </section>
+
     <!-- ========================================================================= -->
     <!-- TAB 2: 管理者用「作業者別生産性ダッシュボード」（PIN 0120保護） -->
     <!-- ========================================================================= -->
@@ -377,32 +381,50 @@
       <div id="prodDashboardContent" class="hidden space-y-6">
         
         <!-- Dashboard Header & Actions -->
-        <div class="bg-white rounded-2xl p-4 sm:p-6 border border-slate-200 shadow-xs flex flex-wrap items-center justify-between gap-4">
-          <div>
-            <h2 class="text-lg font-black text-slate-900 tracking-tight flex items-center gap-2">
-              <span>作業者別生産性ダッシュボード</span>
-              <span class="text-xs font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">認証済</span>
-            </h2>
-            <p class="text-xs text-slate-500 mt-0.5">総検品数量 ÷ 総作業時間 から算出された主要生産性KPI</p>
+        <div class="bg-white rounded-2xl p-4 sm:p-6 border border-slate-200 shadow-xs space-y-3">
+          <div class="flex flex-wrap items-center justify-between gap-4">
+            <div>
+              <div class="flex items-center gap-2 flex-wrap">
+                <h2 class="text-lg font-black text-slate-900 tracking-tight">作業者別生産性ダッシュボード</h2>
+                <span class="text-xs font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">認証済</span>
+                <span id="prodDataSourceBadge" class="text-[11px] font-bold px-2.5 py-0.5 rounded-full border bg-slate-100 text-slate-700 border-slate-200">
+                  ローカルキャッシュ表示中
+                </span>
+              </div>
+              <p class="text-xs text-slate-500 mt-0.5">
+                スプレッドシート全体の確定実績 ÷ 総作業時間 から算出された主要生産性KPI
+                <span id="prodLastSyncText" class="ml-2 text-indigo-600 font-semibold"></span>
+              </p>
+            </div>
+
+            <div class="flex flex-wrap items-center gap-2">
+              <button onclick="fetchProductivityFromGas(true)" id="btnProdCloudRefresh" class="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-lg shadow-xs transition flex items-center gap-1.5">
+                <svg id="prodRefreshIcon" class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+                <span>最新データ取得</span>
+              </button>
+              <button onclick="loadSampleProductivityData()" class="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-lg border border-slate-200 transition">
+                サンプルデータ投入
+              </button>
+              <button onclick="window.print()" class="px-3 py-1.5 bg-white hover:bg-slate-100 text-slate-700 text-xs font-bold rounded-lg border border-slate-200 transition flex items-center gap-1.5 shadow-2xs">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
+                <span>印刷 / PDF出力</span>
+              </button>
+              <button onclick="exportProductivityCSV()" class="px-3 py-1.5 bg-white hover:bg-slate-100 text-indigo-700 text-xs font-bold rounded-lg border border-indigo-200 transition flex items-center gap-1.5 shadow-2xs">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+                <span>CSV保存</span>
+              </button>
+              <button onclick="promptClearProductivityData()" class="px-3 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-700 text-xs font-bold rounded-lg border border-rose-200 transition">
+                全データ消去
+              </button>
+            </div>
           </div>
 
-          <div class="flex items-center gap-2">
-            <button onclick="loadSampleProductivityData()" class="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-lg border border-slate-200 transition">
-              サンプルデータ投入
-            </button>
-            <button onclick="window.print()" class="px-3 py-1.5 bg-white hover:bg-slate-100 text-slate-700 text-xs font-bold rounded-lg border border-slate-200 transition flex items-center gap-1.5 shadow-2xs">
-              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
-              <span>印刷 / PDF出力</span>
-            </button>
-            <button onclick="exportProductivityCSV()" class="px-3 py-1.5 bg-white hover:bg-slate-100 text-indigo-700 text-xs font-bold rounded-lg border border-indigo-200 transition flex items-center gap-1.5 shadow-2xs">
-              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
-              <span>CSV保存</span>
-            </button>
-            <button onclick="promptClearProductivityData()" class="px-3 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-700 text-xs font-bold rounded-lg border border-rose-200 transition">
-              全データ消去
-            </button>
+          <div id="prodCloudErrorBanner" class="hidden p-2.5 rounded-xl bg-amber-50 border border-amber-200 text-xs text-amber-800 font-semibold flex items-center gap-2">
+            <svg class="w-4 h-4 text-amber-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+            <span id="prodCloudErrorMessage">オフラインのため端末内キャッシュを表示しています</span>
           </div>
         </div>
+
         <!-- Month-by-Month Highlight Cards (一目でわかる月別検品数) -->
         <div class="bg-gradient-to-br from-indigo-900 to-slate-900 rounded-2xl p-5 text-white shadow-md border border-indigo-700/50 space-y-3">
           <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-indigo-700/60 pb-3">
@@ -476,6 +498,7 @@
             </div>
           </div>
         </div>
+
         <!-- Worker Ranking Table -->
         <div class="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden print-card">
           <div class="p-4 sm:p-5 border-b border-slate-200 bg-slate-50/60 flex items-center justify-between">
@@ -570,17 +593,25 @@
       <div class="bg-white rounded-2xl p-6 border border-slate-200 shadow-xs space-y-4">
         <h3 class="text-base font-black text-slate-900">Google Apps Script (GAS) 連携設定</h3>
         <p class="text-xs text-slate-600 leading-relaxed">
-          自身が作成したGoogleスプレッドシートのWeb App URLを登録すると、スキャン結果が直接クラウドへ蓄積されます。
+          自身が作成したGoogleスプレッドシートのWeb App URLを登録すると、スキャン結果が直接クラウドへ蓄積されます。GAS環境上で開いている場合はURL設定不要で自動連携します。
         </p>
 
+        <div id="gasSettingsAutoBanner" class="hidden p-3.5 rounded-xl bg-emerald-50 border border-emerald-200 text-xs text-emerald-900 flex items-start gap-2.5">
+          <svg class="w-4 h-4 text-emerald-600 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+          <div>
+            <div class="font-bold">GAS環境を自動認識しました（URL手動設定なしでも自動連携中）</div>
+            <div id="gasSettingsAutoDetail" class="text-[11px] text-emerald-800 mt-0.5">google.script.run を使用して直接スプレッドシートと同期しています。</div>
+          </div>
+        </div>
+
         <div class="space-y-1.5">
-          <label class="text-xs font-bold text-slate-700">GASウェブアプリURL (exec)</label>
+          <label class="text-xs font-bold text-slate-700">GASウェブアプリURL (exec) ※外部ブラウザから接続する場合</label>
           <div class="flex gap-2">
             <input 
               type="url" 
               id="gasUrlInput" 
               class="flex-1 px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-mono text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500" 
-              placeholder="https://google.com"
+              placeholder="https://script.google.com/macros/s/.../exec"
             >
             <button onclick="saveGasUrl()" class="px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs rounded-xl shadow-xs transition">
               保存
@@ -596,8 +627,9 @@
     </section>
 
   </main>
+
   <!-- ========================================================================= -->
-  <!-- MODAL: 5. スプレッドシートへ送信 (作業者名 & 検品日 & 作業時間入力) -->
+  <!-- MODAL: 5. スプレッドシートへ送信 (作業者名 & 作業時間入力) -->
   <!-- ========================================================================= -->
   <div id="modalSubmit" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 flex items-center justify-center p-4">
     <div class="bg-white rounded-2xl p-6 max-w-md w-full shadow-2xl space-y-4 border border-slate-100">
@@ -606,7 +638,7 @@
           <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/></svg>
         </div>
         <h3 class="text-lg font-black text-slate-900">5. スプレッドシートへ送信</h3>
-        <p class="text-xs text-slate-500 mt-0.5">検品日と作業時間を入力してまとめて送信します</p>
+        <p class="text-xs text-slate-500 mt-0.5">本日の検品作業時間を入力してまとめて送信します</p>
       </div>
 
       <div class="bg-slate-50 p-3.5 rounded-xl border border-slate-200 text-xs space-y-2">
@@ -620,25 +652,30 @@
         </div>
       </div>
 
-      <!-- Worker Input in Modal -->
-      <div class="space-y-1.5">
-        <label class="text-xs font-bold text-slate-700">記録する作業者名</label>
-        <input type="text" id="modalWorkerInput" placeholder="作業者名を入力" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold text-slate-800 focus:outline-none focus:border-indigo-600" value="">
+      <!-- Worker Input & Inspection Date (Calendar) in Modal -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <div class="space-y-1.5">
+          <label class="text-xs font-bold text-slate-700">記録する作業者名</label>
+          <input type="text" id="modalWorkerInput" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold text-slate-800 focus:outline-none focus:border-indigo-600" value="山田">
+        </div>
+        <div class="space-y-1.5">
+          <div class="flex items-center justify-between">
+            <label for="modalInspectionDateInput" class="text-xs font-bold text-slate-700">検品日</label>
+            <span id="modalDateModeBadge" class="text-[10px] font-semibold bg-emerald-50 text-emerald-700 px-1.5 py-0.5 rounded">本日</span>
+          </div>
+          <input type="date" id="modalInspectionDateInput" onchange="onModalDateChange()" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-800 focus:outline-none focus:border-indigo-600">
+        </div>
       </div>
 
-      <!-- Inspection Date Input in Modal (カレンダー入力) -->
-      <div class="space-y-1.5">
-        <div class="flex items-center justify-between">
-          <label for="modalDateInput" class="text-xs font-bold text-slate-700">検品日（後日入力はカレンダーで変更）</label>
-          <button type="button" onclick="setModalDateToday()" class="text-[11px] font-bold text-indigo-600 hover:underline">今日に戻す</button>
-        </div>
-        <input type="date" id="modalDateInput" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold text-slate-800 focus:outline-none focus:border-indigo-600">
+      <div id="modalPastDateNotice" class="hidden px-3 py-2 bg-amber-50 border border-amber-200 rounded-xl text-[11px] text-amber-900 font-semibold flex items-center justify-between gap-2">
+        <span>📅 指定日（<span id="modalPastDateLabel"></span>）の週別・月別集計に合算されます</span>
+        <button type="button" onclick="resetModalInspectionDate()" class="text-indigo-700 hover:underline font-bold flex-shrink-0">今日に戻す</button>
       </div>
 
       <!-- Work Minutes Input -->
       <div class="space-y-2">
         <div class="flex items-center justify-between">
-          <label class="text-xs font-bold text-slate-700">作業時間（分単位）</label>
+          <label id="modalWorkMinutesLabel" class="text-xs font-bold text-slate-700">本日の作業時間（分単位）</label>
           <span class="text-[11px] text-slate-400">生産性集計に使用</span>
         </div>
         <div class="flex items-center gap-2">
@@ -698,10 +735,113 @@
       </div>
     </div>
   </div>
+
+  <!-- Unregistered Barcode Alert Modal (誤登録防止) -->
+  <div id="modalUnregisteredAlert" class="hidden fixed inset-0 bg-slate-900/75 backdrop-blur-xs z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl p-6 max-w-md w-full shadow-2xl border-2 border-rose-500 space-y-4">
+      <div class="flex items-start gap-3">
+        <div class="w-12 h-12 rounded-2xl bg-rose-100 text-rose-600 flex items-center justify-center flex-shrink-0 border border-rose-200">
+          <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+        </div>
+        <div class="flex-1 min-w-0">
+          <span class="inline-block bg-rose-600 text-white text-[10px] font-black px-2 py-0.5 rounded uppercase tracking-wider">未登録バーコード検知</span>
+          <h3 class="text-lg font-black text-rose-700 mt-1">商品が登録されていません</h3>
+          <p class="text-xs text-slate-600 mt-1 leading-relaxed">
+            読み取ったコードは商品マスタに存在しないため、誤登録防止のため追加をブロックしました。
+          </p>
+        </div>
+      </div>
+
+      <div class="bg-rose-50 border border-rose-200 rounded-xl p-3 space-y-1">
+        <div class="text-[10px] font-bold text-rose-600 uppercase">読み取りコード / 入力値</div>
+        <div id="unregisteredAlertCode" class="font-mono text-base font-black text-rose-950 break-all">-</div>
+      </div>
+
+      <p class="text-[11px] text-slate-500 leading-relaxed">
+        スプレッドシートの「商品マスタ」シートへ商品を登録してから右上の「マスタ更新」を押すか、手動検索で該当商品をお探しください。
+      </p>
+
+      <div class="flex flex-wrap gap-2 pt-1">
+        <button type="button" onclick="retryMasterFromUnregisteredAlert()" class="px-3.5 py-2.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-xs font-bold rounded-xl border border-indigo-200 transition">
+          マスタ再同期
+        </button>
+        <button type="button" onclick="focusSearchFromUnregisteredAlert()" class="px-3.5 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl border border-slate-200 transition">
+          手動検索へ
+        </button>
+        <button type="button" onclick="closeUnregisteredAlert()" class="flex-1 py-2.5 bg-rose-600 hover:bg-rose-700 text-white text-xs font-black rounded-xl shadow-sm transition">
+          閉じてスキャンに戻る
+        </button>
+      </div>
+    </div>
+  </div>
+
   <!-- ========================================================================= -->
   <!-- JAVASCRIPT LOGIC (Self-Contained & Optimized for PC USB Webcam) -->
   <!-- ========================================================================= -->
   <script>
+    // Injected by Code.gs HtmlService template when hosted on GAS (guarded for standalone preview)
+    const AUTO_GAS_URL_RAW = '<?= autoGasUrl ?>';
+    const AUTO_GAS_URL = (AUTO_GAS_URL_RAW && !AUTO_GAS_URL_RAW.includes('<?') && AUTO_GAS_URL_RAW.startsWith('http'))
+      ? AUTO_GAS_URL_RAW
+      : '';
+
+    function isGasNativeEnv() {
+      return typeof google !== 'undefined' && google.script && google.script.run;
+    }
+
+    function getEffectiveGasUrl() {
+      const inputEl = document.getElementById('gasUrlInput');
+      const inputVal = inputEl ? inputEl.value.trim() : '';
+      const saved = localStorage.getItem('gas_insp_url') || '';
+      if (inputVal) return inputVal;
+      if (saved) return saved;
+      if (AUTO_GAS_URL) return AUTO_GAS_URL;
+      if (typeof window !== 'undefined' && window.location && window.location.href) {
+        const href = window.location.href;
+        if (href.includes('script.google.com/macros/') && href.includes('/exec')) {
+          return href.split('?')[0].split('#')[0];
+        }
+      }
+      return '';
+    }
+
+    // JST (Asia/Tokyo) Date Utilities - prevents UTC 00:00-08:59 off-by-one day bug
+    function getJstDateString(date = new Date()) {
+      const parts = new Intl.DateTimeFormat('ja-JP', {
+        timeZone: 'Asia/Tokyo',
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit'
+      }).formatToParts(date);
+      const y = (parts.find(p => p.type === 'year') || {}).value || '';
+      const m = (parts.find(p => p.type === 'month') || {}).value || '';
+      const d = (parts.find(p => p.type === 'day') || {}).value || '';
+      return `${y}-${m}-${d}`;
+    }
+
+    function getJstYearMonth(date = new Date(), monthOffset = 0) {
+      const today = getJstDateString(date);
+      if (monthOffset === 0) return today.substring(0, 7);
+      const [y, m] = today.split('-').map(Number);
+      const shifted = new Date(Date.UTC(y, m - 1 + monthOffset, 1));
+      return `${shifted.getUTCFullYear()}-${String(shifted.getUTCMonth() + 1).padStart(2, '0')}`;
+    }
+
+    function getJstDateTimeString(date = new Date()) {
+      const parts = new Intl.DateTimeFormat('ja-JP', {
+        timeZone: 'Asia/Tokyo',
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+        hour12: false
+      }).formatToParts(date);
+      const get = (t) => (parts.find(p => p.type === t) || {}).value || '00';
+      return `${get('year')}-${get('month')}-${get('day')} ${get('hour')}:${get('minute')}:${get('second')}`;
+    }
+
     // Audio Feedback using Web Audio API
     function playSound(type) {
       try {
@@ -734,6 +874,23 @@
           osc1.stop(ctx.currentTime + 0.08);
           osc2.start(ctx.currentTime + 0.08);
           osc2.stop(ctx.currentTime + 0.22);
+        } else if (type === 'error') {
+          const osc1 = ctx.createOscillator();
+          const osc2 = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc1.type = 'sawtooth';
+          osc2.type = 'sawtooth';
+          osc1.frequency.setValueAtTime(280, ctx.currentTime);
+          osc2.frequency.setValueAtTime(210, ctx.currentTime + 0.12);
+          gain.gain.setValueAtTime(0.2, ctx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.3);
+          osc1.connect(gain);
+          osc2.connect(gain);
+          gain.connect(ctx.destination);
+          osc1.start(ctx.currentTime);
+          osc1.stop(ctx.currentTime + 0.12);
+          osc2.start(ctx.currentTime + 0.12);
+          osc2.stop(ctx.currentTime + 0.3);
         }
       } catch (e) {}
     }
@@ -758,23 +915,10 @@
       { code: 'ITM-701', name1: 'リバーシブルバケットハット', name2: 'ブラック×カーキ / UVカット', size: '58cm', jan: '4907890123456' }
     ];
 
-    // 日本時間 (JST) で YYYY-MM-DD を取得するヘルパー
-    function getJstDateStr(dateObj) {
-      const d = dateObj || new Date();
-      const jst = new Date(d.getTime() + (9 * 60 * 60 * 1000));
-      return jst.toISOString().substring(0, 10);
-    }
-
-    // GAS環境判定（google.script.run が使えるか）
-    function isGasWebApp() {
-      return typeof google !== 'undefined' && google.script && google.script.run;
-    }
-
     const STORAGE_KEY = {
       MASTER: 'gas_insp_master',
       DRAFTS: 'gas_insp_drafts',
       WORKER: 'gas_insp_worker',
-      WORKER_LIST: 'gas_insp_worker_list',
       GAS_URL: 'gas_insp_url',
       HISTORY: 'gas_insp_history',
       WORK_TIMES: 'gas_insp_work_times'
@@ -784,12 +928,20 @@
     let draftRecords = [];
     let activeScannedItem = null;
     let isAwaitingQuantity = false;
+    let isUnregisteredAlertOpen = false;
     let html5QrScanner = null;
     let isCameraActive = false;
     let selectedCameraId = '';
     let lastScannedBarcode = { code: '', time: 0 };
     let isProdUnlocked = false;
-    let quickWorkers = [];
+
+    // Cloud Productivity Dataset (null when not fetched yet; fallback to localStorage)
+    let cloudHistoryData = null;
+    let cloudWorkTimesData = null;
+    let prodDataSource = 'local'; // 'cloud' | 'local'
+    let isSyncingCloud = false;
+    let lastCloudSyncTime = null;
+    let cloudSyncErrorMessage = null;
 
     // On Load
     window.addEventListener('DOMContentLoaded', () => {
@@ -815,61 +967,43 @@
         draftRecords = d ? JSON.parse(d) : [];
       } catch { draftRecords = []; }
 
-      try {
-        const wl = localStorage.getItem(STORAGE_KEY.WORKER_LIST);
-        quickWorkers = wl ? JSON.parse(wl) : [];
-      } catch { quickWorkers = []; }
-      renderQuickWorkers();
-
-      const w = localStorage.getItem(STORAGE_KEY.WORKER) || '';
+      const w = localStorage.getItem(STORAGE_KEY.WORKER) || '山田';
       document.getElementById('workerInput').value = w;
-      document.getElementById('headerWorkerName').textContent = w || '未設定';
+      document.getElementById('headerWorkerName').textContent = w;
       document.getElementById('modalWorkerInput').value = w;
 
-      const u = localStorage.getItem(STORAGE_KEY.GAS_URL);
-      if (u) {
-        document.getElementById('gasUrlInput').value = u;
-        document.getElementById('headerGasStatus').textContent = 'GASクラウド同期中';
-      } else if (isGasWebApp()) {
-        document.getElementById('headerGasStatus').textContent = 'GAS内蔵モード連携中';
+      const savedUrl = localStorage.getItem(STORAGE_KEY.GAS_URL) || '';
+      const effectiveUrl = savedUrl || AUTO_GAS_URL || getEffectiveGasUrl();
+      if (effectiveUrl) {
+        document.getElementById('gasUrlInput').value = effectiveUrl;
+        if (!savedUrl && AUTO_GAS_URL) {
+          localStorage.setItem(STORAGE_KEY.GAS_URL, AUTO_GAS_URL);
+        }
       }
-    }
 
-    function renderQuickWorkers() {
-      const container = document.getElementById('quickWorkerButtons');
-      if (!container) return;
-      if (quickWorkers.length === 0) {
-        container.innerHTML = '<span class="text-[11px] text-slate-400">名前を入力して「＋登録」でボタン追加</span>';
-        return;
+      const statusEl = document.getElementById('headerGasStatus');
+      const autoBanner = document.getElementById('gasSettingsAutoBanner');
+      const autoDetail = document.getElementById('gasSettingsAutoDetail');
+      if (isGasNativeEnv()) {
+        statusEl.textContent = 'GAS自動連携中 (URL設定不要)';
+        statusEl.className = 'hidden sm:inline text-emerald-700 font-bold text-[11px]';
+        if (autoBanner) autoBanner.classList.remove('hidden');
+        if (autoDetail) {
+          autoDetail.textContent = AUTO_GAS_URL
+            ? `google.script.run + 自動検出URL (${AUTO_GAS_URL}) で自動連携中です。`
+            : 'google.script.run を使用してURL設定不要でスプレッドシートと自動連携中です。';
+        }
+      } else if (effectiveUrl) {
+        statusEl.textContent = 'GASクラウド連携中';
+        statusEl.className = 'hidden sm:inline text-emerald-700 font-semibold text-[11px]';
+        if (AUTO_GAS_URL && autoBanner) {
+          autoBanner.classList.remove('hidden');
+          if (autoDetail) autoDetail.textContent = `自動検出URL (${AUTO_GAS_URL}) と連携しています。`;
+        }
+      } else {
+        statusEl.textContent = 'ローカル保存モード (URL未設定)';
+        statusEl.className = 'hidden sm:inline text-amber-700 font-semibold text-[11px]';
       }
-      container.innerHTML = quickWorkers.map(name => `
-        <span class="inline-flex items-center bg-slate-100 hover:bg-indigo-50 border border-slate-200 rounded text-xs font-semibold text-slate-700 overflow-hidden">
-          <button type="button" onclick="setQuickWorker('${escapeHtml(name)}')" class="px-2 py-1 hover:text-indigo-600">${escapeHtml(name)}</button>
-          <button type="button" onclick="removeQuickWorker('${escapeHtml(name)}')" class="px-1.5 py-1 text-slate-400 hover:text-rose-600 hover:bg-rose-50 border-l border-slate-200" title="削除">×</button>
-        </span>
-      `).join('');
-    }
-
-    function registerQuickWorker(customName) {
-      const name = (customName !== undefined ? customName : document.getElementById('workerInput').value).trim();
-      if (!name) {
-        if (customName === undefined) alert('登録する担当者名を入力してください。');
-        return;
-      }
-      if (!quickWorkers.includes(name)) {
-        quickWorkers.push(name);
-        localStorage.setItem(STORAGE_KEY.WORKER_LIST, JSON.stringify(quickWorkers));
-        renderQuickWorkers();
-        if (customName === undefined) showToast(`担当者「${name}」を登録しました`);
-      }
-      setQuickWorker(name);
-    }
-
-    function removeQuickWorker(name) {
-      quickWorkers = quickWorkers.filter(w => w !== name);
-      localStorage.setItem(STORAGE_KEY.WORKER_LIST, JSON.stringify(quickWorkers));
-      renderQuickWorkers();
-      showToast(`「${name}」をボタンから削除しました`);
     }
 
     function saveDrafts() {
@@ -883,6 +1017,7 @@
       el.classList.remove('hidden');
       setTimeout(() => el.classList.add('hidden'), 2500);
     }
+
     // Camera device initialization & J5create JVU250 prioritization
     function initCameraDevices() {
       if (typeof Html5Qrcode === 'undefined') return;
@@ -979,27 +1114,57 @@
       }
     }
 
-    // Step 1: Barcode Scanned -> Beep -> Auto-focus Tenkey Quantity Input
+    // Step 1: Barcode Scanned -> Validate Master -> Beep -> Auto-focus Tenkey Quantity Input (or Alert if Unregistered)
     function handleBarcodeScanned(barcode) {
-      if (isAwaitingQuantity) return;
+      if (isAwaitingQuantity || isUnregisteredAlertOpen) return;
+
+      const trimmed = String(barcode || '').trim();
+      if (!trimmed) return;
 
       const now = Date.now();
-      if (barcode === lastScannedBarcode.code && (now - lastScannedBarcode.time < 1200)) {
+      if (trimmed === lastScannedBarcode.code && (now - lastScannedBarcode.time < 1200)) {
         return;
       }
-      lastScannedBarcode = { code: barcode, time: now };
+      lastScannedBarcode = { code: trimmed, time: now };
 
-      const matched = masterItems.find(m => 
-        m.jan.trim() === barcode.trim() || m.code.toLowerCase() === barcode.trim().toLowerCase()
+      const matched = masterItems.find(m =>
+        (m.jan && m.jan.trim() === trimmed) ||
+        (m.code && m.code.toLowerCase() === trimmed.toLowerCase())
       );
 
       if (!matched) {
-        alert(`【未登録エラー】\n読み取ったバーコード（${barcode}）は商品マスタに登録されていません。\nマスタを更新するか、手動検索から選択してください。`);
+        playSound('error');
+        openUnregisteredAlert(trimmed);
         return;
       }
 
       playSound('scan');
       setActiveScannedItem(matched);
+    }
+
+    function openUnregisteredAlert(code) {
+      isUnregisteredAlertOpen = true;
+      document.getElementById('unregisteredAlertCode').textContent = code;
+      document.getElementById('modalUnregisteredAlert').classList.remove('hidden');
+    }
+
+    function closeUnregisteredAlert() {
+      isUnregisteredAlertOpen = false;
+      document.getElementById('modalUnregisteredAlert').classList.add('hidden');
+    }
+
+    function retryMasterFromUnregisteredAlert() {
+      closeUnregisteredAlert();
+      refreshMaster(true);
+    }
+
+    function focusSearchFromUnregisteredAlert() {
+      closeUnregisteredAlert();
+      const input = document.getElementById('searchInput');
+      if (input) {
+        input.focus();
+        input.select();
+      }
     }
 
     function setActiveScannedItem(item) {
@@ -1056,9 +1221,10 @@
       if (!activeScannedItem) return;
       const input = document.getElementById('tenkeyQtyInput');
       const qty = Math.max(1, parseInt(input.value, 10) || 1);
-      const worker = document.getElementById('workerInput').value.trim() || '未設定';
-      const today = getJstDateStr();
+      const worker = document.getElementById('workerInput').value.trim() || '山田';
+      const today = getJstDateString();
 
+      // Check if existing record in drafts
       const existingIdx = draftRecords.findIndex(r => r.code === activeScannedItem.code);
       if (existingIdx >= 0) {
         draftRecords[existingIdx].quantity += qty;
@@ -1080,6 +1246,7 @@
       playSound('confirm');
       showToast(`${activeScannedItem.name1} (${qty}個) を追加しました`);
 
+      // Step 3: Re-arm camera scanning for next item!
       cancelActiveScan();
     }
 
@@ -1134,6 +1301,7 @@
         </div>
       `).join('');
     }
+
     function adjustDraftQty(id, delta) {
       const idx = draftRecords.findIndex(r => r.id === id);
       if (idx >= 0) {
@@ -1187,13 +1355,52 @@
 
       document.getElementById('submitModalRecordCount').textContent = `${count} 商品`;
       document.getElementById('submitModalTotalQty').textContent = `${totalQty.toLocaleString()} 個`;
-      document.getElementById('modalWorkerInput').value = document.getElementById('workerInput').value.trim() || '';
-      setModalDateToday();
+      document.getElementById('modalWorkerInput').value = document.getElementById('workerInput').value.trim() || '山田';
+      document.getElementById('modalInspectionDateInput').value = getJstDateString();
+      onModalDateChange();
       document.getElementById('modalSubmit').classList.remove('hidden');
     }
 
-    function setModalDateToday() {
-      document.getElementById('modalDateInput').value = getJstDateStr();
+    function onModalDateChange() {
+      const dateInput = document.getElementById('modalInspectionDateInput');
+      const todayJst = getJstDateString();
+      const val = (dateInput && dateInput.value) ? dateInput.value : todayJst;
+      const isCustom = val !== todayJst;
+      const badge = document.getElementById('modalDateModeBadge');
+      const notice = document.getElementById('modalPastDateNotice');
+      const noticeLabel = document.getElementById('modalPastDateLabel');
+      const minutesLabel = document.getElementById('modalWorkMinutesLabel');
+
+      if (badge) {
+        badge.textContent = isCustom ? '後日指定' : '本日';
+        badge.className = isCustom
+          ? 'text-[10px] font-bold bg-amber-100 text-amber-800 px-1.5 py-0.5 rounded border border-amber-200'
+          : 'text-[10px] font-semibold bg-emerald-50 text-emerald-700 px-1.5 py-0.5 rounded';
+      }
+      if (dateInput) {
+        dateInput.className = isCustom
+          ? 'w-full px-3 py-2 bg-amber-50 border border-amber-400 rounded-xl text-xs font-bold text-amber-950 focus:outline-none focus:border-amber-600'
+          : 'w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-800 focus:outline-none focus:border-indigo-600';
+      }
+      if (notice && noticeLabel) {
+        if (isCustom) {
+          noticeLabel.textContent = val;
+          notice.classList.remove('hidden');
+        } else {
+          notice.classList.add('hidden');
+        }
+      }
+      if (minutesLabel) {
+        minutesLabel.textContent = isCustom ? `${val} の作業時間（分単位）` : '本日の作業時間（分単位）';
+      }
+    }
+
+    function resetModalInspectionDate() {
+      const dateInput = document.getElementById('modalInspectionDateInput');
+      if (dateInput) {
+        dateInput.value = getJstDateString();
+        onModalDateChange();
+      }
     }
 
     function closeSubmitModal() {
@@ -1205,26 +1412,19 @@
     }
 
     function executeSubmit(includeTime) {
-      const worker = document.getElementById('modalWorkerInput').value.trim();
-      if (!worker) {
-        alert('記録する作業者名を入力してください。');
-        document.getElementById('modalWorkerInput').focus();
+      if (draftRecords.length === 0) {
+        alert('送信対象の検品データがありません。バーコードをスキャンまたは検索して追加してください。');
         return;
       }
+      const worker = document.getElementById('modalWorkerInput').value.trim() || '山田';
+      localStorage.setItem(STORAGE_KEY.WORKER, worker);
+      document.getElementById('workerInput').value = worker;
+      document.getElementById('headerWorkerName').textContent = worker;
 
-      // 作業者名を保存し、クイック選択ボタンにも自動登録
-      registerQuickWorker(worker);
-
-      const selectedDate = document.getElementById('modalDateInput').value || getJstDateStr();
       const mins = includeTime ? (parseInt(document.getElementById('workMinutesInput').value, 10) || 0) : 0;
-      const nowStr = new Date().toLocaleString('ja-JP');
-
-      const recordsToSubmit = draftRecords.map(d => ({
-        ...d,
-        date: selectedDate,
-        worker: worker,
-        timestamp: nowStr
-      }));
+      const dateInputEl = document.getElementById('modalInspectionDateInput');
+      const selectedDate = (dateInputEl && dateInputEl.value) ? dateInputEl.value : getJstDateString();
+      const nowStr = getJstDateTimeString();
 
       const workTimeRecord = (includeTime && mins > 0) ? {
         date: selectedDate,
@@ -1233,10 +1433,16 @@
         timestamp: nowStr
       } : null;
 
-      const gasUrl = document.getElementById('gasUrlInput').value.trim();
+      const recordsToSubmit = draftRecords.map(d => ({
+        ...d,
+        date: selectedDate,
+        worker: worker,
+        timestamp: nowStr
+      }));
       const count = recordsToSubmit.length;
+      const effectiveUrl = getEffectiveGasUrl();
 
-      // ローカル履歴にも保存
+      // Save locally to history & work times for instant offline fallback
       let history = [];
       try { history = JSON.parse(localStorage.getItem(STORAGE_KEY.HISTORY) || '[]'); } catch {}
       history.push(...recordsToSubmit);
@@ -1255,41 +1461,50 @@
         workTime: workTimeRecord
       };
 
-      if (isGasWebApp()) {
+      const finishLocalUI = () => {
+        draftRecords = [];
+        saveDrafts();
+        closeSubmitModal();
+        switchTab('workstation');
+      };
+
+      if (isGasNativeEnv()) {
+        finishLocalUI();
         google.script.run
           .withSuccessHandler(() => {
-            showToast('スプレッドシートへ送信完了しました！');
-            alert(`【送信が完了しました】\n検品日: ${selectedDate}\nGoogleスプレッドシートへ検品実績（${count}件）を送信完了しました！`);
+            showToast('送信が完了しました！(GAS直接連携)');
+            alert('【送信が完了しました】\nGoogleスプレッドシートへ検品実績（' + count + '件）を送信完了しました！\n検品ステーション画面に戻りました。続けて検品作業を行えます。');
+            if (isProdUnlocked) fetchProductivityFromGas(false);
           })
           .withFailureHandler((err) => {
-            showToast('ローカル保存完了（GAS通信エラー）');
-            alert('スプレッドシートへの書き込みに失敗しました: ' + err.message);
+            console.warn('google.script.run submit失敗:', err);
+            showToast('送信が完了しました！(ローカル保存)');
+            alert('【送信が完了しました (ローカル保存)】\nデータはブラウザ内に正常に保存され、検品ステーション画面に戻りました。\n\n※スプレッドシートへの同期でエラーが発生しました。\n理由: ' + (err && err.message ? err.message : 'GAS通信失敗'));
           })
           .apiSubmitReport(payload);
-      } else if (gasUrl) {
-        fetch(gasUrl, {
+      } else if (effectiveUrl) {
+        finishLocalUI();
+        fetch(effectiveUrl, {
           method: 'POST',
           headers: { 'Content-Type': 'text/plain;charset=utf-8' },
           body: JSON.stringify(payload)
         }).then(() => {
           showToast('送信が完了しました！');
-          alert(`【送信が完了しました】\n検品日: ${selectedDate}\nGoogleスプレッドシートへ検品実績（${count}件）を送信完了しました！`);
+          alert('【送信が完了しました】\nGoogleスプレッドシートへ検品実績（' + count + '件）を送信完了しました！\n検品ステーション画面に戻りました。続けて検品作業を行えます。');
+          if (isProdUnlocked) fetchProductivityFromGas(false);
         }).catch(err => {
+          console.warn('GAS POST失敗:', err);
           showToast('送信が完了しました！(ローカル保存)');
-          alert('【送信が完了しました (ローカル保存)】\nデータはブラウザ内に保存されました。\n理由: ' + (err.message || '通信失敗'));
+          alert('【送信が完了しました (ローカル保存)】\nデータはブラウザ内に正常に保存され、検品ステーション画面に戻りました。\n\n※スプレッドシートへの通信でエラーが発生しました。\n理由: ' + (err.message || '通信失敗') + '\n「設定・GAS連携」タブでURLとアクセス権設定（全員）をご確認ください。');
         });
       } else {
+        finishLocalUI();
         showToast('送信が完了しました！(アプリ内保存)');
-        alert(`【送信が完了しました】\n検品日: ${selectedDate}\n検品実績（${count}件）をアプリ内に保存しました。`);
+        alert('【送信が完了しました】\n検品実績（' + count + '件）をアプリ内に保存しました。\n検品ステーション画面に戻りましたので、続けて作業を行えます。\n\n※Googleスプレッドシートへのクラウド同期も行う場合は、「設定・GAS連携」タブでWebアプリURLをご登録ください。');
       }
-
-      draftRecords = [];
-      saveDrafts();
-      closeSubmitModal();
-      switchTab('workstation');
     }
 
-    // Incremental AND Search
+    // Incremental AND Search + Enter Unregistered Check
     function setupSearchEvents() {
       const searchInput = document.getElementById('searchInput');
       const suggestBox = document.getElementById('suggestBox');
@@ -1303,6 +1518,37 @@
         } else {
           clearBtn.classList.add('hidden');
           suggestBox.classList.add('hidden');
+        }
+      });
+
+      searchInput.addEventListener('keydown', (e) => {
+        if (e.key !== 'Enter') return;
+        const val = searchInput.value.trim();
+        if (!val) return;
+        e.preventDefault();
+
+        const exactMatch = masterItems.find(m =>
+          (m.jan && m.jan.trim() === val) ||
+          (m.code && m.code.toLowerCase() === val.toLowerCase())
+        );
+        if (exactMatch) {
+          selectSearchItem(exactMatch.code);
+          return;
+        }
+
+        const terms = val.toLowerCase().split(/[\s\u3000]+/).filter(Boolean);
+        const matches = masterItems.filter(item => {
+          const combined = `${item.code} ${item.name1} ${item.name2} ${item.size} ${item.jan}`.toLowerCase();
+          return terms.every(t => combined.includes(t));
+        });
+
+        if (matches.length === 1) {
+          selectSearchItem(matches[0].code);
+        } else if (matches.length === 0) {
+          searchInput.blur();
+          suggestBox.classList.add('hidden');
+          playSound('error');
+          openUnregisteredAlert(val);
         }
       });
     }
@@ -1329,7 +1575,7 @@
       }).slice(0, 20);
 
       if (filtered.length === 0) {
-        suggestBox.innerHTML = '<div class="p-3 text-center text-xs text-slate-400">一致する商品がありません</div>';
+        suggestBox.innerHTML = '<div class="p-4 text-center text-xs font-bold text-rose-600 bg-rose-50/70">⚠️ 商品が登録されていません（マスタ一致なし）</div>';
         suggestBox.classList.remove('hidden');
         return;
       }
@@ -1382,6 +1628,11 @@
     // Global Hotkeys
     function setupGlobalHotkeys() {
       window.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && isUnregisteredAlertOpen) {
+          e.preventDefault();
+          closeUnregisteredAlert();
+          return;
+        }
         if (e.ctrlKey && e.key === 'Enter') {
           e.preventDefault();
           if (draftRecords.length > 0) openSubmitModal();
@@ -1399,15 +1650,17 @@
     function saveGasUrl() {
       const url = document.getElementById('gasUrlInput').value.trim();
       localStorage.setItem(STORAGE_KEY.GAS_URL, url);
+      loadStorage();
       showToast('GAS URLを保存しました');
+      if (url) refreshMaster(true);
     }
 
     function refreshMaster(showMsg) {
-      const url = localStorage.getItem(STORAGE_KEY.GAS_URL);
-      if (isGasWebApp()) {
+      const effectiveUrl = getEffectiveGasUrl();
+      if (isGasNativeEnv()) {
         google.script.run
-          .withSuccessHandler((data) => {
-            if (data && data.success && Array.isArray(data.items)) {
+          .withSuccessHandler(data => {
+            if (data && data.success && Array.isArray(data.items) && data.items.length > 0) {
               masterItems = data.items;
               localStorage.setItem(STORAGE_KEY.MASTER, JSON.stringify(data.items));
               loadStorage();
@@ -1415,14 +1668,14 @@
             }
           })
           .withFailureHandler(() => {
-            if (showMsg) showToast('マスタ再同期に失敗しました');
+            if (showMsg) showToast('マスタ再同期に失敗しました（オフライン）');
           })
           .apiGetMaster();
-      } else if (url) {
-        fetch(url + '?action=getMaster')
+      } else if (effectiveUrl) {
+        fetch(effectiveUrl + '?action=getMaster')
           .then(res => res.json())
           .then(data => {
-            if (data && data.success && Array.isArray(data.items)) {
+            if (data && data.success && Array.isArray(data.items) && data.items.length > 0) {
               masterItems = data.items;
               localStorage.setItem(STORAGE_KEY.MASTER, JSON.stringify(data.items));
               loadStorage();
@@ -1435,266 +1688,466 @@
         showToast(`商品マスタ（${masterItems.length}件）を再読み込みしました`);
       }
     }
-    // Tabs & Productivity Dashboard
-    function switchTab(tab) {
-      ['workstation', 'productivity', 'settings'].forEach(t => {
-        document.getElementById(`tab-${t}`).classList.add('hidden');
-        const btn = document.getElementById(`nav-${t}`);
-        btn.classList.remove('bg-white', 'text-indigo-700', 'shadow-xs', 'border', 'border-slate-200/80');
-        btn.classList.add('text-slate-600');
-      });
 
-      document.getElementById(`tab-${tab}`).classList.remove('hidden');
-      const activeBtn = document.getElementById(`nav-${tab}`);
-      activeBtn.classList.add('bg-white', 'text-indigo-700', 'shadow-xs', 'border', 'border-slate-200/80');
-      activeBtn.classList.remove('text-slate-600');
+    // Fetch Full Spreadsheet Productivity Data (Cloud Primary + LocalStorage Offline Fallback)
+    function fetchProductivityFromGas(showMsg) {
+      const effectiveUrl = getEffectiveGasUrl();
+      const refreshIcon = document.getElementById('prodRefreshIcon');
 
-      if (tab === 'productivity') {
-        if (!isProdUnlocked) {
-          document.getElementById('prodLockScreen').classList.remove('hidden');
-          document.getElementById('prodDashboardContent').classList.add('hidden');
-          setTimeout(() => document.getElementById('prodPinInput').focus(), 100);
+      if (!isGasNativeEnv() && !effectiveUrl) {
+        cloudHistoryData = null;
+        cloudWorkTimesData = null;
+        prodDataSource = 'local';
+        cloudSyncErrorMessage = null;
+        renderProductivity();
+        if (showMsg) showToast('ローカルキャッシュの集計データを再読み込みしました');
+        return;
+      }
+
+      isSyncingCloud = true;
+      cloudSyncErrorMessage = null;
+      if (refreshIcon) refreshIcon.classList.add('animate-spin');
+
+      const onSuccess = (data) => {
+        isSyncingCloud = false;
+        if (refreshIcon) refreshIcon.classList.remove('animate-spin');
+        if (data && data.success) {
+          cloudHistoryData = Array.isArray(data.records) ? data.records : [];
+          cloudWorkTimesData = Array.isArray(data.workTimes) ? data.workTimes : [];
+          // Cache locally for offline resilience
+          localStorage.setItem(STORAGE_KEY.HISTORY, JSON.stringify(cloudHistoryData));
+          localStorage.setItem(STORAGE_KEY.WORK_TIMES, JSON.stringify(cloudWorkTimesData));
+          prodDataSource = 'cloud';
+          lastCloudSyncTime = getJstDateTimeString();
+          cloudSyncErrorMessage = null;
+          renderProductivity();
+          if (showMsg) showToast(`スプレッドシート全体の集計データを取得しました (${cloudHistoryData.length}件)`);
         } else {
-          renderProductivityDashboard();
+          onFailure(new Error((data && data.error) || 'サーバーからエラーが返されました'));
         }
+      };
+
+      const onFailure = (err) => {
+        isSyncingCloud = false;
+        if (refreshIcon) refreshIcon.classList.remove('animate-spin');
+        cloudHistoryData = null;
+        cloudWorkTimesData = null;
+        prodDataSource = 'local';
+        cloudSyncErrorMessage = `スプレッドシートに接続できないため端末内のキャッシュを表示しています (${(err && err.message) || '通信エラー'})`;
+        renderProductivity();
+        if (showMsg) showToast('オフラインのため端末内のローカルデータを表示しました');
+      };
+
+      if (isGasNativeEnv()) {
+        google.script.run
+          .withSuccessHandler(onSuccess)
+          .withFailureHandler(onFailure)
+          .apiGetProductivity('');
+      } else {
+        fetch(effectiveUrl + '?action=getProductivity')
+          .then(res => {
+            if (!res.ok) throw new Error('HTTP ' + res.status);
+            return res.json();
+          })
+          .then(onSuccess)
+          .catch(onFailure);
       }
     }
 
+    // Tab Switching
+    function switchTab(tab) {
+      document.getElementById('tab-workstation').classList.add('hidden');
+      document.getElementById('tab-productivity').classList.add('hidden');
+      document.getElementById('tab-settings').classList.add('hidden');
+
+      document.getElementById('nav-workstation').className = 'px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 text-slate-600 hover:text-slate-900';
+      document.getElementById('nav-productivity').className = 'px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 text-slate-600 hover:text-slate-900';
+      document.getElementById('nav-settings').className = 'px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 text-slate-600 hover:text-slate-900';
+
+      if (tab === 'workstation') {
+        document.getElementById('tab-workstation').classList.remove('hidden');
+        document.getElementById('nav-workstation').className = 'px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 bg-white text-indigo-700 shadow-xs border border-slate-200/80';
+        if (!isCameraActive && selectedCameraId) startCamera(selectedCameraId);
+      } else if (tab === 'productivity') {
+        document.getElementById('tab-productivity').classList.remove('hidden');
+        document.getElementById('nav-productivity').className = 'px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 bg-white text-indigo-700 shadow-xs border border-slate-200/80';
+        if (isProdUnlocked) {
+          fetchProductivityFromGas(false);
+        }
+      } else if (tab === 'settings') {
+        document.getElementById('tab-settings').classList.remove('hidden');
+        document.getElementById('nav-settings').className = 'px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 bg-white text-indigo-700 shadow-xs border border-slate-200/80';
+      }
+    }
+
+    // Productivity Unlock & Calculations
     function unlockProductivity() {
-      const pin = document.getElementById('prodPinInput').value;
+      const pin = document.getElementById('prodPinInput').value.trim();
       if (pin === '0120') {
         isProdUnlocked = true;
         document.getElementById('prodLockScreen').classList.add('hidden');
         document.getElementById('prodDashboardContent').classList.remove('hidden');
-        renderProductivityDashboard();
-        showToast('生産性ダッシュボードを解除しました');
+        renderProductivity();
+        fetchProductivityFromGas(false);
       } else {
-        alert('PINコードが正しくありません（初期値: 0120）');
-        document.getElementById('prodPinInput').value = '';
-        document.getElementById('prodPinInput').focus();
+        alert('PINコードが正しくありません (初期PIN: 0120)');
       }
     }
 
-    function renderProductivityDashboard() {
-      const gasUrl = localStorage.getItem(STORAGE_KEY.GAS_URL);
-      if (isGasWebApp()) {
-        google.script.run
-          .withSuccessHandler((data) => {
-            if (data && data.success) {
-              drawProductivityUI(data.records || [], data.workTimes || []);
-            } else {
-              drawProductivityUIFromLocal();
-            }
-          })
-          .withFailureHandler(() => drawProductivityUIFromLocal())
-          .apiGetAllData();
-      } else if (gasUrl) {
-        fetch(gasUrl + '?action=getAllData')
-          .then(res => res.json())
-          .then(data => {
-            if (data && data.success) {
-              drawProductivityUI(data.records || [], data.workTimes || []);
-            } else {
-              drawProductivityUIFromLocal();
-            }
-          })
-          .catch(() => drawProductivityUIFromLocal());
-      } else {
-        drawProductivityUIFromLocal();
+    function getActiveProductivityData() {
+      if (prodDataSource === 'cloud' && Array.isArray(cloudHistoryData)) {
+        return {
+          history: cloudHistoryData,
+          workTimes: Array.isArray(cloudWorkTimesData) ? cloudWorkTimesData : []
+        };
       }
-    }
-    function drawProductivityUIFromLocal() {
       let history = [];
-      let wt = [];
+      let workTimes = [];
       try { history = JSON.parse(localStorage.getItem(STORAGE_KEY.HISTORY) || '[]'); } catch {}
-      try { wt = JSON.parse(localStorage.getItem(STORAGE_KEY.WORK_TIMES) || '[]'); } catch {}
-      drawProductivityUI(history, wt);
+      try { workTimes = JSON.parse(localStorage.getItem(STORAGE_KEY.WORK_TIMES) || '[]'); } catch {}
+      return { history, workTimes };
     }
 
-    function drawProductivityUI(history, wt) {
-      const totalQty = history.reduce((sum, r) => sum + (Number(r.quantity) || 0), 0);
-      const totalMins = wt.reduce((sum, w) => sum + (Number(w.minutes) || 0), 0);
-      const totalHours = (totalMins / 60).toFixed(1);
-      const secPerItem = totalQty > 0 ? ((totalMins * 60) / totalQty).toFixed(1) : '0.0';
-      const itemsPerHour = totalMins > 0 ? Math.round((totalQty / totalMins) * 60) : 0;
+    function renderProductivity() {
+      if (!isProdUnlocked) return;
+      const { history, workTimes } = getActiveProductivityData();
+
+      // Update Cloud / Local Source Status Badge & Error Banner
+      const badgeEl = document.getElementById('prodDataSourceBadge');
+      const syncTextEl = document.getElementById('prodLastSyncText');
+      const errBanner = document.getElementById('prodCloudErrorBanner');
+      const errMsg = document.getElementById('prodCloudErrorMessage');
+
+      if (badgeEl) {
+        if (prodDataSource === 'cloud') {
+          badgeEl.textContent = '☁️ スプレッドシート全体データ (全PC統合)';
+          badgeEl.className = 'text-[11px] font-bold px-2.5 py-0.5 rounded-full border bg-indigo-50 text-indigo-700 border-indigo-200';
+        } else {
+          badgeEl.textContent = '💾 端末内キャッシュ (オフライン / 未接続)';
+          badgeEl.className = 'text-[11px] font-bold px-2.5 py-0.5 rounded-full border bg-amber-50 text-amber-800 border-amber-200';
+        }
+      }
+      if (syncTextEl) {
+        syncTextEl.textContent = lastCloudSyncTime ? `最終同期 (JST): ${lastCloudSyncTime}` : '';
+      }
+      if (errBanner && errMsg) {
+        if (cloudSyncErrorMessage) {
+          errMsg.textContent = cloudSyncErrorMessage;
+          errBanner.classList.remove('hidden');
+        } else {
+          errBanner.classList.add('hidden');
+        }
+      }
+
+      const totalQty = history.reduce((sum, h) => sum + (h.quantity || 0), 0);
+      const totalMinutes = workTimes.reduce((sum, w) => sum + (w.minutes || 0), 0);
+      const totalSeconds = totalMinutes * 60;
+
+      const secPerItem = totalQty > 0 ? (totalSeconds / totalQty).toFixed(1) : '0.0';
+      const itemsPerHour = totalMinutes > 0 ? ((totalQty / totalMinutes) * 60).toFixed(1) : '0.0';
 
       document.getElementById('kpiTotalQty').textContent = `${totalQty.toLocaleString()} 個`;
-      document.getElementById('kpiTotalMinutes').textContent = `${totalMins.toLocaleString()} 分`;
-      document.getElementById('kpiTotalHours').textContent = `(約 ${totalHours} 時間)`;
+      document.getElementById('kpiTotalMinutes').textContent = `${totalMinutes.toLocaleString()} 分`;
+      document.getElementById('kpiTotalHours').textContent = `(約 ${(totalMinutes / 60).toFixed(1)} 時間)`;
       document.getElementById('kpiSecPerItem').textContent = `${secPerItem} 秒`;
-      document.getElementById('kpiItemsPerHour').textContent = `${itemsPerHour.toLocaleString()} 個/h`;
+      document.getElementById('kpiItemsPerHour').textContent = `${itemsPerHour} 個/h`;
 
-      // Monthly Summary Tiles
-      const monthlyMap = {};
-      history.forEach(r => {
-        const dStr = String(r.date || '');
-        const mKey = dStr.length >= 7 ? dStr.substring(0, 7) : '不明';
-        monthlyMap[mKey] = (monthlyMap[mKey] || 0) + (Number(r.quantity) || 0);
+      // Render Monthly Overview Tiles
+      renderMonthlyTiles(history, workTimes);
+
+      // Render Charts & Worker ranking table
+      renderWorkerRanking(history, workTimes);
+      renderCharts(history, workTimes);
+
+      // Render Product, Color, Size Breakdowns
+      renderBreakdowns(history);
+    }
+
+    function renderMonthlyTiles(history, workTimes) {
+      const container = document.getElementById('gasMonthlyTilesContainer');
+      const monthMap = {};
+
+      history.forEach(h => {
+        if (!h.date) return;
+        const ym = String(h.date).substring(0, 7);
+        if (!monthMap[ym]) monthMap[ym] = { ym, qty: 0, minutes: 0 };
+        monthMap[ym].qty += (h.quantity || 0);
       });
 
-      const monthlyContainer = document.getElementById('gasMonthlyTilesContainer');
-      const sortedMonths = Object.keys(monthlyMap).sort().reverse().slice(0, 8);
-      if (sortedMonths.length === 0) {
-        monthlyContainer.innerHTML = '<div class="text-xs text-indigo-300 col-span-4 py-4 text-center">データがありません</div>';
-      } else {
-        monthlyContainer.innerHTML = sortedMonths.map((m, idx) => {
-          const qty = monthlyMap[m];
-          const prevM = sortedMonths[idx + 1];
-          const prevQty = prevM ? monthlyMap[prevM] : null;
-          let diffBadge = '';
-          if (prevQty && prevQty > 0) {
-            const pct = Math.round(((qty - prevQty) / prevQty) * 100);
-            diffBadge = pct >= 0
-              ? `<span class="text-[10px] font-bold text-emerald-300 bg-emerald-950/60 px-1.5 py-0.5 rounded">前月比 +${pct}%</span>`
-              : `<span class="text-[10px] font-bold text-rose-300 bg-rose-950/60 px-1.5 py-0.5 rounded">前月比 ${pct}%</span>`;
-          }
-          return `
-            <div class="bg-white/10 border border-white/15 rounded-xl p-3 space-y-1">
-              <div class="flex items-center justify-between">
-                <span class="text-xs font-bold text-indigo-200">${escapeHtml(m)}</span>
-                ${diffBadge}
-              </div>
-              <div class="text-xl font-black text-white">${qty.toLocaleString()} <span class="text-xs font-normal text-indigo-200">個</span></div>
+      workTimes.forEach(w => {
+        if (!w.date) return;
+        const ym = String(w.date).substring(0, 7);
+        if (!monthMap[ym]) monthMap[ym] = { ym, qty: 0, minutes: 0 };
+        monthMap[ym].minutes += (w.minutes || 0);
+      });
+
+      const months = Object.keys(monthMap).sort().reverse();
+      if (months.length === 0) {
+        container.innerHTML = '<div class="text-xs text-indigo-300 col-span-4 py-4 text-center">データがありません</div>';
+        return;
+      }
+
+      const maxQty = Math.max(...months.map(m => monthMap[m].qty), 1);
+      const nowYm = getJstYearMonth();
+
+      container.innerHTML = months.map(ym => {
+        const d = monthMap[ym];
+        const [y, m] = ym.split('-');
+        const isCur = ym === nowYm;
+        const pct = Math.min(100, Math.max(10, Math.round((d.qty / maxQty) * 100)));
+        const secPerItem = d.qty > 0 && d.minutes > 0 ? (d.minutes * 60 / d.qty).toFixed(1) : '-';
+        return `
+          <div class="bg-white/10 hover:bg-white/20 p-3 rounded-xl border border-white/15 transition">
+            <div class="flex items-center justify-between text-xs font-bold text-white mb-1">
+              <span>${y}年${parseInt(m, 10)}月</span>
+              ${isCur ? '<span class="text-[9px] bg-amber-400 text-slate-900 px-1 rounded font-black">当月</span>' : ''}
             </div>
-          `;
-        }).join('');
+            <div class="flex items-baseline gap-1 my-1">
+              <span class="text-2xl font-black text-amber-300">${d.qty.toLocaleString()}</span>
+              <span class="text-xs font-bold text-indigo-200">個</span>
+            </div>
+            <div class="w-full bg-black/25 h-1.5 rounded-full overflow-hidden my-1.5">
+              <div class="bg-gradient-to-r from-amber-400 to-emerald-400 h-full rounded-full" style="width: ${pct}%"></div>
+            </div>
+            <div class="flex justify-between text-[10px] text-indigo-200 pt-1 border-t border-white/10">
+              <span>時間: ${(d.minutes / 60).toFixed(1)}h</span>
+              <span>速度: ${secPerItem}秒/点</span>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function renderBreakdowns(history) {
+      const prodTbody = document.getElementById('gasProductBreakdownTbody');
+      const colorContainer = document.getElementById('gasColorBreakdownContainer');
+      const sizeContainer = document.getElementById('gasSizeBreakdownContainer');
+
+      if (history.length === 0) {
+        prodTbody.innerHTML = '<tr><td colspan="4" class="p-4 text-center text-slate-400">データがありません</td></tr>';
+        colorContainer.innerHTML = '<div class="text-slate-400 col-span-2 text-center py-4">データがありません</div>';
+        sizeContainer.innerHTML = '<div class="text-slate-400 col-span-4 text-center py-4">データがありません</div>';
+        return;
       }
 
-      // Weekly & Monthly Bar Charts
-      renderSimpleBarChart('weeklyChartContainer', history, 'week');
-      renderSimpleBarChart('monthlyChartContainer', history, 'month');
-      // Worker Ranking
-      const workerStats = {};
-      history.forEach(r => {
-        const w = r.worker || '未設定';
-        if (!workerStats[w]) workerStats[w] = { qty: 0, mins: 0 };
-        workerStats[w].qty += (Number(r.quantity) || 0);
-      });
-      wt.forEach(w => {
-        const name = w.worker || '未設定';
-        if (!workerStats[name]) workerStats[name] = { qty: 0, mins: 0 };
-        workerStats[name].mins += (Number(w.minutes) || 0);
-      });
+      const totalQty = history.reduce((sum, h) => sum + (h.quantity || 0), 0) || 1;
 
-      const rankingList = Object.entries(workerStats).map(([name, st]) => {
-        const iph = st.mins > 0 ? Math.round((st.qty / st.mins) * 60) : 0;
-        const spi = st.qty > 0 && st.mins > 0 ? ((st.mins * 60) / st.qty).toFixed(1) : '-';
-        return { name, qty: st.qty, mins: st.mins, iph, spi };
-      }).sort((a, b) => b.iph - a.iph || b.qty - a.qty);
-
-      const tbody = document.getElementById('workerRankingTbody');
-      if (rankingList.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="6" class="py-8 text-center text-slate-400 font-medium">データがありません</td></tr>';
-      } else {
-        tbody.innerHTML = rankingList.map((row, i) => `
-          <tr class="hover:bg-slate-50">
-            <td class="py-3 px-4 font-black ${i === 0 ? 'text-amber-500' : 'text-slate-500'}">${i + 1}位</td>
-            <td class="py-3 px-4 font-bold text-slate-900">${escapeHtml(row.name)}</td>
-            <td class="py-3 px-4 text-right font-bold text-indigo-700">${row.qty.toLocaleString()} 個</td>
-            <td class="py-3 px-4 text-right text-slate-600">${row.mins.toLocaleString()} 分</td>
-            <td class="py-3 px-4 text-right text-emerald-700 font-semibold">${row.spi} 秒</td>
-            <td class="py-3 px-4 text-right font-black text-slate-900">${row.iph.toLocaleString()} 個/h</td>
-          </tr>
-        `).join('');
-      }
-
-      // Product, Color, Size Breakdown
+      // Product breakdown
       const prodMap = {};
       const colorMap = {};
       const sizeMap = {};
-      history.forEach(r => {
-        const q = Number(r.quantity) || 0;
-        const pKey = `${r.code || ''}__${r.name1 || ''}__${r.name2 || ''}__${r.size || ''}`;
-        if (!prodMap[pKey]) prodMap[pKey] = { code: r.code || '-', label: `${r.name1 || ''} / ${r.name2 || ''} / ${r.size || ''}`, qty: 0 };
-        prodMap[pKey].qty += q;
-        const cKey = r.name2 || '未指定';
-        colorMap[cKey] = (colorMap[cKey] || 0) + q;
-        const sKey = r.size || 'Free';
-        sizeMap[sKey] = (sizeMap[sKey] || 0) + q;
+
+      history.forEach(h => {
+        const code = h.code || 'UNKNOWN';
+        if (!prodMap[code]) prodMap[code] = { code, name1: h.name1 || '', name2: h.name2 || '', size: h.size || '', qty: 0 };
+        prodMap[code].qty += (h.quantity || 0);
+
+        let color = (h.name2 || '未設定').trim();
+        if (color.includes('/')) color = color.split('/')[0].trim();
+        colorMap[color] = (colorMap[color] || 0) + (h.quantity || 0);
+
+        const size = (h.size || '-').trim().toUpperCase();
+        sizeMap[size] = (sizeMap[size] || 0) + (h.quantity || 0);
       });
 
-      const prodTbody = document.getElementById('gasProductBreakdownTbody');
-      const prodArr = Object.values(prodMap).sort((a, b) => b.qty - a.qty);
-      prodTbody.innerHTML = prodArr.length === 0
-        ? '<tr><td colspan="4" class="p-4 text-center text-slate-400">データがありません</td></tr>'
-        : prodArr.map(p => {
-            const ratio = totalQty > 0 ? ((p.qty / totalQty) * 100).toFixed(1) : '0.0';
-            return `<tr class="hover:bg-slate-50"><td class="py-2 px-3 font-mono font-bold text-indigo-700">${escapeHtml(p.code)}</td><td class="py-2 px-3 text-slate-800">${escapeHtml(p.label)}</td><td class="py-2 px-3 text-right font-bold">${p.qty.toLocaleString()}</td><td class="py-2 px-3 text-right text-slate-500">${ratio}%</td></tr>`;
-          }).join('');
+      const prods = Object.values(prodMap).sort((a, b) => b.qty - a.qty);
+      prodTbody.innerHTML = prods.map(p => {
+        const pct = ((p.qty / totalQty) * 100).toFixed(1);
+        return `
+          <tr class="hover:bg-slate-50">
+            <td class="py-2 px-3 font-mono font-bold text-indigo-900">${escapeHtml(p.code)}</td>
+            <td class="py-2 px-3 text-slate-700">${escapeHtml(p.name1)} <span class="text-[10px] text-slate-400">${escapeHtml(p.name2)} (${escapeHtml(p.size)})</span></td>
+            <td class="py-2 px-3 text-right font-black text-slate-900">${p.qty} 個</td>
+            <td class="py-2 px-3 text-right font-bold text-indigo-700">${pct}%</td>
+          </tr>
+        `;
+      }).join('');
 
-      const colorBox = document.getElementById('gasColorBreakdownContainer');
-      const colorArr = Object.entries(colorMap).sort((a, b) => b[1] - a[1]);
-      colorBox.innerHTML = colorArr.length === 0
-        ? '<div class="text-slate-400 col-span-2 text-center py-4">データがありません</div>'
-        : colorArr.map(([k, v]) => `<div class="bg-slate-50 border border-slate-200 rounded-lg p-2 flex justify-between items-center"><span class="font-bold text-slate-700 truncate pr-2">${escapeHtml(k)}</span><span class="font-black text-indigo-700">${v.toLocaleString()}個</span></div>`).join('');
+      // Colors
+      const colors = Object.keys(colorMap).sort((a, b) => colorMap[b] - colorMap[a]);
+      colorContainer.innerHTML = colors.map(c => {
+        const qty = colorMap[c];
+        const pct = ((qty / totalQty) * 100).toFixed(1);
+        return `
+          <div class="p-2.5 bg-slate-50 rounded-xl border border-slate-200">
+            <div class="flex justify-between font-bold text-slate-800">
+              <span>${escapeHtml(c)}</span>
+              <span class="text-indigo-700 font-black">${qty}個 (${pct}%)</span>
+            </div>
+            <div class="w-full bg-slate-200 h-1.5 rounded-full overflow-hidden mt-1.5">
+              <div class="bg-indigo-600 h-full rounded-full" style="width: ${pct}%"></div>
+            </div>
+          </div>
+        `;
+      }).join('');
 
-      const sizeBox = document.getElementById('gasSizeBreakdownContainer');
-      const sizeArr = Object.entries(sizeMap).sort((a, b) => b[1] - a[1]);
-      sizeBox.innerHTML = sizeArr.length === 0
-        ? '<div class="text-slate-400 col-span-4 text-center py-4">データがありません</div>'
-        : sizeArr.map(([k, v]) => `<div class="bg-slate-50 border border-slate-200 rounded-lg p-2 text-center"><div class="text-[11px] font-bold text-slate-500">${escapeHtml(k)}</div><div class="font-black text-indigo-700">${v.toLocaleString()}</div></div>`).join('');
+      // Sizes
+      const sizes = Object.keys(sizeMap).sort((a, b) => sizeMap[b] - sizeMap[a]);
+      sizeContainer.innerHTML = sizes.map(s => {
+        const qty = sizeMap[s];
+        const pct = ((qty / totalQty) * 100).toFixed(1);
+        return `
+          <div class="p-2 bg-slate-50 rounded-xl border border-slate-200 text-center">
+            <span class="text-[10px] text-slate-500 font-bold block">${escapeHtml(s)}</span>
+            <span class="text-sm font-black text-slate-900">${qty}個</span>
+            <span class="text-[10px] text-indigo-600 font-bold block">${pct}%</span>
+          </div>
+        `;
+      }).join('');
     }
 
-    function renderSimpleBarChart(containerId, history, mode) {
-      const el = document.getElementById(containerId);
-      if (!history || history.length === 0) {
-        el.innerHTML = '<span class="text-xs text-slate-400">データがありません</span>';
+    function renderWorkerRanking(history, workTimes) {
+      const tbody = document.getElementById('workerRankingTbody');
+      const workerMap = {};
+
+      history.forEach(h => {
+        const w = h.worker || '未設定';
+        if (!workerMap[w]) workerMap[w] = { worker: w, quantity: 0, minutes: 0 };
+        workerMap[w].quantity += h.quantity;
+      });
+
+      workTimes.forEach(wt => {
+        const w = wt.worker || '未設定';
+        if (!workerMap[w]) workerMap[w] = { worker: w, quantity: 0, minutes: 0 };
+        workerMap[w].minutes += wt.minutes;
+      });
+
+      const list = Object.values(workerMap).map(w => {
+        const secPerItem = w.quantity > 0 ? (w.minutes * 60 / w.quantity).toFixed(1) : '0.0';
+        const itemsPerHour = w.minutes > 0 ? (w.quantity / w.minutes * 60).toFixed(1) : '0.0';
+        return { ...w, secPerItem, itemsPerHour };
+      }).sort((a, b) => parseFloat(b.itemsPerHour) - parseFloat(a.itemsPerHour));
+
+      if (list.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6" class="py-8 text-center text-slate-400">検品データがありません</td></tr>';
         return;
       }
-      const map = {};
-      history.forEach(r => {
-        const d = String(r.date || '');
-        const key = mode === 'month' ? d.substring(0, 7) : d.substring(5, 10);
-        if (key) map[key] = (map[key] || 0) + (Number(r.quantity) || 0);
+
+      tbody.innerHTML = list.map((w, idx) => `
+        <tr class="hover:bg-slate-50 transition">
+          <td class="py-3 px-4 font-black ${idx === 0 ? 'text-amber-500' : idx === 1 ? 'text-slate-400' : idx === 2 ? 'text-amber-700' : 'text-slate-600'}">
+            #${idx + 1}
+          </td>
+          <td class="py-3 px-4 font-bold text-slate-900">${escapeHtml(w.worker)}</td>
+          <td class="py-3 px-4 text-right font-black text-indigo-700">${w.quantity.toLocaleString()} 個</td>
+          <td class="py-3 px-4 text-right font-semibold text-slate-700">${w.minutes} 分</td>
+          <td class="py-3 px-4 text-right font-bold text-emerald-600">${w.secPerItem} 秒/点</td>
+          <td class="py-3 px-4 text-right font-black text-indigo-900 bg-indigo-50/50">${w.itemsPerHour} 個/h</td>
+        </tr>
+      `).join('');
+    }
+
+    function renderCharts(history, workTimes) {
+      const weeklyContainer = document.getElementById('weeklyChartContainer');
+      const monthlyContainer = document.getElementById('monthlyChartContainer');
+
+      if (history.length === 0) {
+        weeklyContainer.innerHTML = '<span class="text-xs text-slate-400 font-medium">データがありません</span>';
+        monthlyContainer.innerHTML = '<span class="text-xs text-slate-400 font-medium">データがありません</span>';
+        return;
+      }
+
+      // Group by date/week
+      const dateMap = {};
+      history.forEach(h => {
+        dateMap[h.date] = (dateMap[h.date] || 0) + h.quantity;
       });
-      const entries = Object.entries(map).sort((a, b) => a[0].localeCompare(b[0])).slice(-7);
-      const maxVal = Math.max(...entries.map(e => e[1]), 1);
-      el.innerHTML = `<div class="w-full h-full flex items-end justify-around gap-2 pt-4">${entries.map(([k, v]) => {
-        const hPct = Math.max(8, Math.round((v / maxVal) * 100));
-        return `<div class="flex-1 flex flex-col items-center gap-1 h-full justify-end"><span class="text-[10px] font-bold text-indigo-700">${v}</span><div class="w-full max-w-[36px] bg-indigo-500 rounded-t-md" style="height:${hPct}%"></div><span class="text-[10px] text-slate-500 font-mono">${escapeHtml(k)}</span></div>`;
-      }).join('')}</div>`;
+
+      const dates = Object.keys(dateMap).sort().slice(-7);
+      const maxVal = Math.max(...dates.map(d => dateMap[d]), 1);
+
+      weeklyContainer.innerHTML = `
+        <div class="w-full h-full flex items-end justify-between gap-3 pt-6">
+          ${dates.map(d => {
+            const val = dateMap[d];
+            const pct = Math.round((val / maxVal) * 100);
+            return `
+              <div class="flex-1 flex flex-col items-center gap-1.5 h-full justify-end group">
+                <span class="text-[10px] font-black text-indigo-700 opacity-0 group-hover:opacity-100 transition">${val}個</span>
+                <div class="w-full bg-indigo-500 hover:bg-indigo-600 rounded-t-lg transition-all" style="height: ${Math.max(pct, 8)}%"></div>
+                <span class="text-[10px] font-bold text-slate-500 whitespace-nowrap">${d.slice(5)}</span>
+              </div>
+            `;
+          }).join('')}
+        </div>
+      `;
+
+      monthlyContainer.innerHTML = `
+        <div class="w-full h-full flex flex-col justify-center items-center text-center p-4">
+          <div class="text-2xl font-black text-indigo-600">${history.reduce((s, h) => s + h.quantity, 0)} 個</div>
+          <div class="text-xs text-slate-500 font-bold mt-1">今月累計検品実績</div>
+          <div class="text-[11px] text-emerald-600 font-semibold mt-0.5">平均検品ペース安定稼働中</div>
+        </div>
+      `;
     }
 
     function loadSampleProductivityData() {
-      const today = getJstDateStr();
       const sampleHistory = [
-        { date: today, worker: '担当者A', code: 'RMB-001', name1: 'ROMBO', name2: 'BLK WHT XS', size: 'XS', quantity: 120 },
-        { date: today, worker: '担当者B', code: 'RMB-002', name1: 'ROMBO', name2: 'BLK WHT S', size: 'S', quantity: 95 }
+        { id: 's1', date: '2026-10-13', worker: '山田', code: 'ITM-101', name1: 'プレミアムコットンTシャツ', name2: 'ホワイト / クルーネック', size: 'S', jan: '4901234567890', quantity: 110, timestamp: '2026-10-13 16:30:00' },
+        { id: 's2', date: '2026-10-14', worker: '佐藤', code: 'ITM-201', name1: 'ストレッチテーパードチノ', name2: 'ベージュ / 防シワ加工', size: '30inch', jan: '4902345678901', quantity: 90, timestamp: '2026-10-14 17:00:00' },
+        { id: 's3', date: '2026-10-15', worker: '鈴木', code: 'ITM-401', name1: 'オーガニックソックス 3足組', name2: 'モノトーンアソート', size: '25-27cm', jan: '4904567890123', quantity: 180, timestamp: '2026-10-15 16:00:00' },
+        { id: 's4', date: '2026-10-20', worker: '山田', code: 'ITM-102', name1: 'プレミアムコットンTシャツ', name2: 'ホワイト / クルーネック', size: 'M', jan: '4901234567891', quantity: 140, timestamp: '2026-10-20 16:30:00' },
+        { id: 's5', date: '2026-10-21', worker: '佐藤', code: 'ITM-202', name1: 'ストレッチテーパードチノ', name2: 'オリーブ / 防シワ加工', size: '32inch', jan: '4902345678902', quantity: 105, timestamp: '2026-10-21 17:00:00' },
+        { id: 's6', date: '2026-10-22', worker: '鈴木', code: 'ITM-401', name1: 'オーガニックソックス 3足組', name2: 'モノトーンアソート', size: '25-27cm', jan: '4904567890123', quantity: 220, timestamp: '2026-10-22 16:20:00' },
+        { id: 's7', date: '2026-10-27', worker: '高橋', code: 'ITM-301', name1: '防風ライトマウンテンパーカー', name2: 'フォレストグリーン / 撥水', size: 'M', jan: '4903456789012', quantity: 125, timestamp: '2026-10-27 15:45:00' }
       ];
-      const sampleWt = [
-        { date: today, worker: '担当者A', minutes: 60 },
-        { date: today, worker: '担当者B', minutes: 60 }
+      const sampleWorkTimes = [
+        { date: '2026-10-13', worker: '山田', minutes: 55, timestamp: '2026-10-13 16:30:00' },
+        { date: '2026-10-14', worker: '佐藤', minutes: 60, timestamp: '2026-10-14 17:00:00' },
+        { date: '2026-10-15', worker: '鈴木', minutes: 75, timestamp: '2026-10-15 16:00:00' },
+        { date: '2026-10-20', worker: '山田', minutes: 70, timestamp: '2026-10-20 16:30:00' },
+        { date: '2026-10-21', worker: '佐藤', minutes: 65, timestamp: '2026-10-21 17:00:00' },
+        { date: '2026-10-22', worker: '鈴木', minutes: 90, timestamp: '2026-10-22 16:20:00' },
+        { date: '2026-10-27', worker: '高橋', minutes: 70, timestamp: '2026-10-27 15:45:00' }
       ];
+
       localStorage.setItem(STORAGE_KEY.HISTORY, JSON.stringify(sampleHistory));
-      localStorage.setItem(STORAGE_KEY.WORK_TIMES, JSON.stringify(sampleWt));
-      renderProductivityDashboard();
-      showToast('サンプルデータを投入しました');
+      localStorage.setItem(STORAGE_KEY.WORK_TIMES, JSON.stringify(sampleWorkTimes));
+      cloudHistoryData = null;
+      cloudWorkTimesData = null;
+      prodDataSource = 'local';
+      renderProductivity();
+      showToast('テスト用サンプルデータを投入しました');
     }
 
     function promptClearProductivityData() {
-      openClearConfirmModal('ローカル実績データの消去', 'ブラウザ内の集計キャッシュを消去しますか？（スプレッドシートのデータは消えません）', () => {
+      openClearConfirmModal('全データの消去', '端末内に蓄積されたローカル生産性キャッシュを初期化しますか？（スプレッドシートのデータ自体は削除されません）', () => {
         localStorage.removeItem(STORAGE_KEY.HISTORY);
         localStorage.removeItem(STORAGE_KEY.WORK_TIMES);
-        renderProductivityDashboard();
-        showToast('ローカルデータを消去しました');
+        cloudHistoryData = [];
+        cloudWorkTimesData = [];
+        prodDataSource = 'local';
+        renderProductivity();
+        showToast('ローカル生産性データを全消去しました');
       });
     }
 
     function exportProductivityCSV() {
-      let history = [];
-      try { history = JSON.parse(localStorage.getItem(STORAGE_KEY.HISTORY) || '[]'); } catch {}
-      const rows = [['検品日', '作業者', '商品コード', '商品名', 'カラー仕様', 'サイズ', '数量']];
-      history.forEach(r => rows.push([r.date, r.worker, r.code, r.name1, r.name2, r.size, r.quantity]));
-      const csv = '\uFEFF' + rows.map(r => r.map(v => `"${String(v || '').replace(/"/g, '""')}"`).join(',')).join('\n');
+      const { history } = getActiveProductivityData();
+      if (history.length === 0) {
+        alert('出力対象のデータがありません');
+        return;
+      }
+      let csv = '報告日,作業者名,商品コード,品名1,品名2,サイズ,JANコード,数量,送信日時\n';
+      history.forEach(h => {
+        csv += `"${h.date || ''}","${h.worker || ''}","${h.code || ''}","${h.name1 || ''}","${h.name2 || ''}","${h.size || ''}","${h.jan || ''}","${h.quantity || 0}","${h.timestamp || ''}"\n`;
+      });
       const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
-      a.href = URL.createObjectURL(blob);
-      a.download = `検品実績_${getJstDateStr()}.csv`;
+      a.href = url;
+      a.download = `検品報告実績_${getJstDateString()}.csv`;
       a.click();
     }
 
     function escapeHtml(str) {
-      return String(str || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+      if (!str) return '';
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
     }
   </script>
 </body>
