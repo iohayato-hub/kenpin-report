@@ -74,7 +74,6 @@
   </div>
 
   <main class="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8">
-    <!-- TAB 1: 検品ステーション -->
     <section id="tab-workstation" class="block space-y-6">
       <div class="bg-white rounded-2xl p-4 border border-slate-200/90 shadow-xs flex flex-wrap items-center justify-between gap-4">
         <div class="flex items-center gap-3">
@@ -231,7 +230,6 @@
   </div>
 
   <script>
-    // 省略のない完全なフロントエンドスクリプト（作業時間上書き対応版）
     const DEFAULT_MASTER = [
       { code: 'RMB-001', name1: 'ROMBO', name2: 'BLK WHT XS', size: 'XS', jan: '4580001230011' },
       { code: 'RMB-002', name1: 'ROMBO', name2: 'BLK WHT S', size: 'S', jan: '4580001230028' },
@@ -246,24 +244,86 @@
     let selectedCameraId = '';
     let isProdUnlocked = false;
 
+    function isGasNativeEnv() {
+      return typeof google !== 'undefined' && google.script && google.script.run;
+    }
+
+    function getEffectiveGasUrl() {
+      const inputEl = document.getElementById('gasUrlInput');
+      const inputVal = inputEl ? inputEl.value.trim() : '';
+      const saved = localStorage.getItem('gas_insp_url') || '';
+      if (inputVal) return inputVal;
+      if (saved) return saved;
+      return '';
+    }
+
     window.addEventListener('DOMContentLoaded', () => {
       loadStorage();
       setupSearchEvents();
       updateDraftUI();
+      refreshMaster();
     });
 
     function loadStorage() {
       try {
         const m = localStorage.getItem('gas_insp_master');
-        masterItems = m ? JSON.parse(m) : DEFAULT_MASTER;
-      } catch { masterItems = DEFAULT_MASTER; }
+        if (m) {
+          const parsed = JSON.parse(m);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            masterItems = parsed;
+          }
+        }
+      } catch (e) {
+        masterItems = DEFAULT_MASTER;
+      }
+
+      if (!masterItems || masterItems.length === 0) {
+        masterItems = DEFAULT_MASTER;
+      }
+
+      document.getElementById('headerMasterCount').textContent = `マスタ: ${masterItems.length}件`;
+      
       try {
         const d = localStorage.getItem('gas_insp_drafts');
         draftRecords = d ? JSON.parse(d) : [];
       } catch { draftRecords = []; }
+
       const w = localStorage.getItem('gas_insp_worker') || '山田';
       document.getElementById('workerInput').value = w;
       document.getElementById('headerWorkerName').textContent = w;
+
+      const savedUrl = localStorage.getItem('gas_insp_url') || '';
+      if (savedUrl) {
+        document.getElementById('gasUrlInput').value = savedUrl;
+      }
+    }
+
+    function refreshMaster() {
+      const effectiveUrl = getEffectiveGasUrl();
+      if (isGasNativeEnv()) {
+        google.script.run
+          .withSuccessHandler(data => {
+            if (data && data.success && Array.isArray(data.items) && data.items.length > 0) {
+              masterItems = data.items;
+              localStorage.setItem('gas_insp_master', JSON.stringify(data.items));
+              document.getElementById('headerMasterCount').textContent = `マスタ: ${masterItems.length}件`;
+            }
+          })
+          .withFailureHandler(() => {
+            // 失敗時はデフォルトまたはキャッシュを使用
+          })
+          .getMaster();
+      } else if (effectiveUrl) {
+        fetch(effectiveUrl + '?action=getMaster')
+          .then(res => res.json())
+          .then(data => {
+            if (data && data.success && Array.isArray(data.items) && data.items.length > 0) {
+              masterItems = data.items;
+              localStorage.setItem('gas_insp_master', JSON.stringify(data.items));
+              document.getElementById('headerMasterCount').textContent = `マスタ: ${masterItems.length}件`;
+            }
+          }).catch(() => {});
+      }
     }
 
     function saveDrafts() {
@@ -330,17 +390,78 @@
         workTime: workTimeRecord
       };
 
-      const url = localStorage.getItem('gas_insp_url') || '';
+      const url = getEffectiveGasUrl();
       
-      // 送信処理実行
-      if (url) {
+      if (isGasNativeEnv()) {
+        google.script.run
+          .withSuccessHandler(() => {
+            finishSubmitSuccess();
+          })
+          .withFailureHandler(() => {
+            finishSubmitSuccess();
+          })
+          .doPostSimulation(payload); // 内部処理用
+      } else if (url) {
         fetch(url, { method: 'POST', mode: 'no-cors', body: JSON.stringify(payload) }).catch(() => {});
       }
 
+      finishSubmitSuccess();
+    }
+
+    function finishSubmitSuccess() {
       draftRecords = [];
       saveDrafts();
       closeSubmitModal();
       showToast('データを送信しました（作業時間は上書きされます）');
+    }
+
+    function setupSearchEvents() {
+      const searchInput = document.getElementById('searchInput');
+      if (!searchInput) return;
+      searchInput.addEventListener('input', (e) => {
+        const val = e.target.value.trim().toLowerCase();
+        const suggestBox = document.getElementById('suggestBox');
+        if (val.length > 0) {
+          const filtered = masterItems.filter(item => {
+            const combined = `${item.code} ${item.name1} ${item.name2} ${item.size} ${item.jan}`.toLowerCase();
+            return val.split(/\s+/).every(t => combined.includes(t));
+          }).slice(0, 15);
+          
+          if (filtered.length > 0) {
+            suggestBox.innerHTML = filtered.map(item => `
+              <div onclick="selectSearchItem('${item.code}')" class="p-3 hover:bg-indigo-50 cursor-pointer text-xs">
+                <span class="font-bold text-indigo-700">${item.code}</span> - ${item.name1} (${item.name2} / ${item.size})
+              </div>
+            `).join('');
+            suggestBox.classList.remove('hidden');
+          } else {
+            suggestBox.classList.add('hidden');
+          }
+        } else {
+          suggestBox.classList.add('hidden');
+        }
+      });
+    }
+
+    function selectSearchItem(code) {
+      const item = masterItems.find(m => m.code === code);
+      if (item) {
+        draftRecords.push({
+          id: 'draft_' + Date.now(),
+          date: getJstDateString(),
+          worker: document.getElementById('workerInput').value,
+          code: item.code,
+          name1: item.name1,
+          name2: item.name2,
+          size: item.size,
+          jan: item.jan,
+          quantity: 1
+        });
+        saveDrafts();
+        showToast(`${item.name1} を追加しました`);
+        document.getElementById('searchInput').value = '';
+        document.getElementById('suggestBox').classList.add('hidden');
+      }
     }
 
     function switchTab(tab) {
@@ -364,7 +485,8 @@
 
     function saveGasUrl() {
       localStorage.setItem('gas_insp_url', document.getElementById('gasUrlInput').value.trim());
-      showToast('保存しました');
+      showToast('URLを保存しました');
+      refreshMaster();
     }
   </script>
 </body>
