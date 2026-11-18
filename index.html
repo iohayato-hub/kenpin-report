@@ -74,6 +74,7 @@
   </div>
 
   <main class="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8">
+    <!-- TAB 1: 検品ステーション -->
     <section id="tab-workstation" class="block space-y-6">
       <div class="bg-white rounded-2xl p-4 border border-slate-200/90 shadow-xs flex flex-wrap items-center justify-between gap-4">
         <div class="flex items-center gap-3">
@@ -83,7 +84,7 @@
           <div>
             <div class="text-[11px] font-bold text-slate-500 uppercase tracking-wider">作業ステーション担当者</div>
             <div class="flex items-center gap-2 mt-0.5">
-              <input type="text" id="workerInput" class="px-2.5 py-1 bg-slate-50 border border-slate-200 rounded-lg text-sm font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 w-32" value="山田">
+              <input type="text" id="workerInput" oninput="updateWorkerName(this.value)" class="px-2.5 py-1 bg-slate-50 border border-slate-200 rounded-lg text-sm font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 w-32" value="山田">
               <div class="flex gap-1">
                 <button onclick="setQuickWorker('山田')" class="px-2 py-1 bg-slate-100 hover:bg-indigo-50 text-slate-700 rounded text-xs font-semibold">山田</button>
                 <button onclick="setQuickWorker('佐藤')" class="px-2 py-1 bg-slate-100 hover:bg-indigo-50 text-slate-700 rounded text-xs font-semibold">佐藤</button>
@@ -206,8 +207,49 @@
         <button onclick="unlockProductivity()" class="w-full py-2.5 bg-indigo-600 text-white font-bold rounded-xl">ロック解除</button>
       </div>
       <div id="prodDashboardContent" class="hidden space-y-6">
-        <div class="bg-white rounded-2xl p-6 border shadow-xs">
-          <h2 class="text-lg font-black text-slate-900">作業者別生産性ダッシュボード</h2>
+        <div class="bg-white rounded-2xl p-6 border shadow-xs flex items-center justify-between">
+          <div>
+            <h2 class="text-lg font-black text-slate-900">作業者別生産性ダッシュボード</h2>
+            <p class="text-xs text-slate-500 mt-0.5">スプレッドシートの検品実績と作業時間記録を自動集計</p>
+          </div>
+          <button onclick="loadProductivityData()" class="px-4 py-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold text-xs rounded-xl border border-indigo-200">
+            🔄 データを更新
+          </button>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div class="bg-white p-5 rounded-2xl border shadow-xs">
+            <div class="text-xs font-bold text-slate-500">総検品数量</div>
+            <div id="dashTotalQty" class="text-2xl font-black text-indigo-700 mt-1">0 個</div>
+          </div>
+          <div class="bg-white p-5 rounded-2xl border shadow-xs">
+            <div class="text-xs font-bold text-slate-500">総作業時間</div>
+            <div id="dashTotalMinutes" class="text-2xl font-black text-slate-900 mt-1">0 分</div>
+          </div>
+          <div class="bg-white p-5 rounded-2xl border shadow-xs">
+            <div class="text-xs font-bold text-slate-500">平均生産性 (個/h)</div>
+            <div id="dashAvgProductivity" class="text-2xl font-black text-emerald-600 mt-1">0.0 個/h</div>
+          </div>
+        </div>
+
+        <div class="bg-white rounded-2xl p-6 border shadow-xs space-y-4">
+          <h3 class="text-sm font-black text-slate-900">作業者別実績サマリー</h3>
+          <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs">
+              <thead class="bg-slate-50 text-slate-500 border-b">
+                <tr>
+                  <th class="p-3 font-bold">作業者</th>
+                  <th class="p-3 font-bold">検品品目数</th>
+                  <th class="p-3 font-bold">総検品数</th>
+                  <th class="p-3 font-bold">総作業時間</th>
+                  <th class="p-3 font-bold">生産性 (個/h)</th>
+                </tr>
+              </thead>
+              <tbody id="dashWorkerTableBody" class="divide-y divide-slate-100">
+                <tr><td colspan="5" class="p-6 text-center text-slate-400 font-bold">データを読み込んでください</td></tr>
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
     </section>
@@ -283,6 +325,7 @@
       setupSearchEvents();
       updateDraftUI();
       refreshMaster();
+      initCamera();
     });
 
     function loadStorage() {
@@ -317,6 +360,16 @@
       if (savedUrl) {
         document.getElementById('gasUrlInput').value = savedUrl;
       }
+    }
+
+    function setQuickWorker(name) {
+      document.getElementById('workerInput').value = name;
+      updateWorkerName(name);
+    }
+
+    function updateWorkerName(name) {
+      localStorage.setItem('gas_insp_worker', name);
+      document.getElementById('headerWorkerName').textContent = name;
     }
 
     function refreshMaster() {
@@ -374,15 +427,23 @@
         container.innerHTML = '<div class="h-full flex items-center justify-center text-slate-400 text-xs font-bold">未送信の検品実績はありません</div>';
         return;
       }
-      container.innerHTML = draftRecords.map(item => `
-        <div class="p-3 bg-slate-50 rounded-xl border flex items-center justify-between">
-          <div>
-            <div class="text-xs font-bold text-indigo-700">${item.code} - ${item.name1}</div>
-            <div class="text-xs font-bold text-amber-900">${item.name2} / ${item.size}</div>
+      container.innerHTML = draftRecords.map((item, idx) => `
+        <div class="p-3 bg-slate-50 rounded-xl border flex items-center justify-between gap-2">
+          <div class="min-w-0 flex-1">
+            <div class="text-xs font-bold text-indigo-700 truncate">${item.code} - ${item.name1}</div>
+            <div class="text-xs font-semibold text-amber-900 truncate">${item.name2} / ${item.size}</div>
           </div>
-          <div class="text-sm font-black text-slate-900">${item.quantity} 個</div>
+          <div class="flex items-center gap-2">
+            <span class="text-sm font-black text-slate-900">${item.quantity}個</span>
+            <button onclick="removeDraft(${idx})" class="text-slate-400 hover:text-rose-600 text-xs px-1.5 py-1">✕</button>
+          </div>
         </div>
       `).join('');
+    }
+
+    function removeDraft(idx) {
+      draftRecords.splice(idx, 1);
+      saveDrafts();
     }
 
     function openSubmitModal() {
@@ -505,7 +566,7 @@
       draftRecords = [];
       saveDrafts();
       closeSubmitModal();
-      showToast('データを送信しました（作業時間は上書きされます）');
+      showToast('スプレッドシートに送信しました');
     }
 
     function setupSearchEvents() {
@@ -551,7 +612,6 @@
         }
       });
 
-      // イベント委任（Event Delegation）を用いてクリックを確実に検知・処理する
       suggestBox.addEventListener('click', (e) => {
         const row = e.target.closest('.search-item-row');
         if (!row) return;
@@ -568,18 +628,181 @@
         document.getElementById('searchInput').value = '';
         document.getElementById('suggestBox').classList.add('hidden');
         setActiveScannedItem(item);
-      } else {
-        console.warn('商品コードがマスターに見つかりません:', code);
       }
+    }
+
+    // カメラ関連
+    function initCamera() {
+      Html5Qrcode.getCameras().then(devices => {
+        const select = document.getElementById('cameraSelect');
+        if (devices && devices.length > 0) {
+          select.innerHTML = devices.map(d => `<option value="${d.id}">${d.label || 'カメラ ' + d.id}</option>`).join('');
+          selectedCameraId = devices[0].id;
+          startCamera();
+        } else {
+          select.innerHTML = '<option value="">カメラが見つかりません</option>';
+        }
+      }).catch(() => {
+        document.getElementById('cameraSelect').innerHTML = '<option value="">カメラ権限エラー</option>';
+      });
+    }
+
+    function startCamera() {
+      if (!selectedCameraId) return;
+      if (html5QrScanner) {
+        html5QrScanner.stop().catch(() => {}).finally(() => { launchScanner(); });
+      } else {
+        launchScanner();
+      }
+    }
+
+    function launchScanner() {
+      html5QrScanner = new Html5Qrcode("pc-webcam-reader");
+      html5QrScanner.start(
+        selectedCameraId,
+        { fps: 10, qrbox: { width: 250, height: 150 } },
+        (decodedText) => {
+          handleScannedCode(decodedText);
+        },
+        () => {}
+      ).then(() => {
+        isCameraActive = true;
+        document.getElementById('cameraToggleText').textContent = 'カメラ停止';
+      }).catch(() => {});
+    }
+
+    function toggleCamera() {
+      if (isCameraActive && html5QrScanner) {
+        html5QrScanner.stop().then(() => {
+          isCameraActive = false;
+          document.getElementById('cameraToggleText').textContent = 'カメラ開始';
+        }).catch(() => {});
+      } else {
+        startCamera();
+      }
+    }
+
+    function onCameraDeviceChange(id) {
+      selectedCameraId = id;
+      startCamera();
+    }
+
+    function handleScannedCode(code) {
+      const cleanCode = code.trim();
+      const found = masterItems.find(m => String(m.code) === cleanCode || String(m.jan) === cleanCode);
+      if (found) {
+        setActiveScannedItem(found);
+      } else {
+        showToast(`未登録コード: ${cleanCode}`);
+      }
+    }
+
+    // 生産性ダッシュボードデータ読み込み
+    function loadProductivityData() {
+      const effectiveUrl = getEffectiveGasUrl();
+      if (isGasNativeEnv()) {
+        google.script.run
+          .withSuccessHandler(res => {
+            renderProductivityDashboard(res);
+          })
+          .withFailureHandler(() => {
+            showToast('データ取得に失敗しました');
+          })
+          .getProductivityData();
+      } else if (effectiveUrl) {
+        fetch(effectiveUrl + '?action=getProductivity')
+          .then(res => res.json())
+          .then(data => {
+            renderProductivityDashboard(data);
+          }).catch(() => {
+            showToast('データ取得に失敗しました');
+          });
+      } else {
+        showToast('GASのURLまたは環境が設定されていません');
+      }
+    }
+
+    function renderProductivityDashboard(data) {
+      if (!data || !data.success) {
+        showToast('データの取得に失敗しました');
+        return;
+      }
+
+      const records = data.records || [];
+      const workTimes = data.workTimes || [];
+
+      let totalQty = records.reduce((sum, r) => sum + (Number(r.quantity) || 0), 0);
+      let totalMins = workTimes.reduce((sum, w) => sum + (Number(w.minutes) || 0), 0);
+      let totalHours = totalMins / 60;
+      let avgProd = totalHours > 0 ? (totalQty / totalHours).toFixed(1) : '0.0';
+
+      document.getElementById('dashTotalQty').textContent = `${totalQty.toLocaleString()} 個`;
+      document.getElementById('dashTotalMinutes',).textContent = `${totalMins.toLocaleString()} 分 (${(totalHours).toFixed(1)}h)`;
+      document.getElementById('dashAvgProductivity').textContent = `${avgProd} 個/h`;
+
+      // 作業者ごとの集計
+      const workerMap = {};
+      records.forEach(r => {
+        const w = r.worker || '未設定';
+        if (!workerMap[w]) workerMap[w] = { kinds: new Set(), qty: 0 };
+        workerMap[w].kinds.add(r.code);
+        workerMap[w].qty += (Number(r.quantity) || 0);
+      });
+
+      const timeMap = {};
+      workTimes.forEach(w => {
+        const name = w.worker || '未設定';
+        timeMap[name] = (timeMap[name] || 0) + (Number(w.minutes) || 0);
+      });
+
+      const workers = Object.keys(workerMap);
+      const tbody = document.getElementById('dashWorkerTableBody');
+
+      if (workers.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="5" class="p-6 text-center text-slate-400 font-bold">検品実績データがありません</td></tr>';
+        return;
+      }
+
+      tbody.innerHTML = workers.map(w => {
+        const kinds = workerMap[w].kinds.size;
+        const qty = workerMap[w].qty;
+        const mins = timeMap[w] || 0;
+        const hrs = mins / 60;
+        const prod = hrs > 0 ? (qty / hrs).toFixed(1) : '0.0';
+        return `
+          <tr class="hover:bg-slate-50">
+            <td class="p-3 font-bold text-slate-900">${escapeHtml(w)}</td>
+            <td class="p-3 font-semibold">${kinds} 品目</td>
+            <td class="p-3 font-black text-indigo-700">${qty.toLocaleString()} 個</td>
+            <td class="p-3 font-semibold">${mins} 分</td>
+            <td class="p-3 font-black text-emerald-600">${prod} 個/h</td>
+          </tr>
+        `;
+      }).join('');
     }
 
     function switchTab(tab) {
       document.getElementById('tab-workstation').classList.add('hidden');
       document.getElementById('tab-productivity').classList.add('hidden');
       document.getElementById('tab-settings').classList.add('hidden');
-      if (tab === 'workstation') document.getElementById('tab-workstation').classList.remove('hidden');
-      if (tab === 'productivity') document.getElementById('tab-productivity').classList.remove('hidden');
-      if (tab === 'settings') document.getElementById('tab-settings').classList.remove('hidden');
+      
+      document.getElementById('nav-workstation').className = "px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 text-slate-600 hover:text-slate-900";
+      document.getElementById('nav-productivity').className = "px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 text-slate-600 hover:text-slate-900";
+      document.getElementById('nav-settings').className = "px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 text-slate-600 hover:text-slate-900";
+
+      if (tab === 'workstation') {
+        document.getElementById('tab-workstation').classList.remove('hidden');
+        document.getElementById('nav-workstation').className = "px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 bg-white text-indigo-700 shadow-xs border border-slate-200/80";
+      } else if (tab === 'productivity') {
+        document.getElementById('tab-productivity').classList.remove('hidden');
+        document.getElementById('nav-productivity').className = "px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 bg-white text-indigo-700 shadow-xs border border-slate-200/80";
+        if (isProdUnlocked) {
+          loadProductivityData();
+        }
+      } else if (tab === 'settings') {
+        document.getElementById('tab-settings').classList.remove('hidden');
+        document.getElementById('nav-settings').className = "px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 bg-white text-indigo-700 shadow-xs border border-slate-200/80";
+      }
     }
 
     function unlockProductivity() {
@@ -587,6 +810,7 @@
         isProdUnlocked = true;
         document.getElementById('prodLockScreen').classList.add('hidden');
         document.getElementById('prodDashboardContent').classList.remove('hidden');
+        loadProductivityData();
       } else {
         alert('PINが違います');
       }
