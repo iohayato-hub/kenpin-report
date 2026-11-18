@@ -8,10 +8,10 @@
   <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
   <style>
     @media print {
-      body { background: white !important; }
+      body { background: white !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
       header, nav, #camera-controls, .no-print { display: none !important; }
-      #tab-productivity { display: block !important; }
-      .print-card { break-inside: avoid; border: 1px solid #cbd5e1 !important; }
+      #tab-productivity { display: block !important; padding: 0 !important; margin: 0 !important; }
+      .print-card { break-inside: avoid; border: 1px solid #cbd5e1 !important; box-shadow: none !important; margin-bottom: 1rem !important; }
     }
     input::-webkit-outer-spin-button,
     input::-webkit-inner-spin-button {
@@ -25,7 +25,7 @@
 </head>
 <body class="bg-slate-100/70 text-slate-800 antialiased min-h-screen flex flex-col font-sans selection:bg-indigo-100 selection:text-indigo-900">
 
-  <header class="bg-white border-b border-slate-200/90 sticky top-0 z-30 shadow-xs backdrop-blur-md bg-white/95">
+  <header class="bg-white border-b border-slate-200/90 sticky top-0 z-30 shadow-xs backdrop-blur-md bg-white/95 no-print">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex items-center justify-between">
       <div class="flex items-center space-x-3">
         <div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-indigo-700 to-indigo-500 flex items-center justify-center text-white font-black text-base shadow-sm tracking-tight">
@@ -58,7 +58,7 @@
             <span id="badgeDraftCount" class="hidden bg-rose-500 text-white rounded-full text-[10px] font-black px-1.5 py-0.2">0</span>
           </button>
           <button onclick="switchTab('productivity')" id="nav-productivity" class="px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 text-slate-600 hover:text-slate-900">
-            <span>生産性ダッシュボード</span>
+            <span>生産性ダッシュボード・編集</span>
           </button>
           <button onclick="switchTab('settings')" id="nav-settings" class="px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 text-slate-600 hover:text-slate-900">
             <span>設定・GAS連携</span>
@@ -68,7 +68,23 @@
     </div>
   </header>
 
-  <div id="toastNotification" class="hidden fixed top-16 left-1/2 -translate-x-1/2 z-50 bg-slate-900 text-white text-xs font-bold py-2.5 px-5 rounded-full shadow-2xl flex items-center gap-2">
+  <!-- 大型送信完了オーバーレイ通知（作業者に分かりやすく明示） -->
+  <div id="largeSuccessBanner" class="hidden fixed inset-0 z-50 bg-slate-900/70 backdrop-blur-xs flex items-center justify-center p-4">
+    <div class="bg-white rounded-3xl p-8 max-w-lg w-full shadow-2xl text-center space-y-6 border-4 border-emerald-500 animate-bounce-short">
+      <div class="w-20 h-20 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto text-4xl font-black">
+        ✓
+      </div>
+      <div class="space-y-2">
+        <h2 class="text-2xl font-black text-slate-900">スプレッドシートへの送信が完了しました！</h2>
+        <p class="text-sm font-bold text-slate-600" id="largeSuccessDetail">実績データおよび作業時間が正常に記録されました。</p>
+      </div>
+      <button onclick="closeLargeSuccessBanner()" class="w-full py-4 bg-emerald-600 hover:bg-emerald-700 text-white font-black text-base rounded-2xl shadow-lg">
+        確認して閉じる
+      </button>
+    </div>
+  </div>
+
+  <div id="toastNotification" class="hidden fixed top-16 left-1/2 -translate-x-1/2 z-50 bg-slate-900 text-white text-xs font-bold py-2.5 px-5 rounded-full shadow-2xl flex items-center gap-2 no-print">
     <svg class="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
     <span id="toastMessage">完了しました</span>
   </div>
@@ -116,7 +132,6 @@
             </div>
           </div>
 
-          <!-- コックピット（スキャン後・手動選択後の数量入力エリア） -->
           <div id="scannedItemCockpit" class="bg-white rounded-2xl p-5 border-2 border-indigo-200 shadow-md transition-all">
             <div id="cockpitIdleState" class="py-6 text-center space-y-2">
               <div class="w-12 h-12 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center mx-auto border border-indigo-100">
@@ -169,7 +184,6 @@
             </div>
           </div>
 
-          <!-- 手動検索エリア -->
           <div class="bg-white rounded-2xl p-4 border border-slate-200 shadow-xs relative">
             <input type="text" id="searchInput" class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold placeholder:text-slate-400 focus:outline-none focus:border-indigo-600" placeholder="手動検索（スペース区切りAND検索 / 品名・品番・カラー・サイズ）...">
             <div id="suggestBox" class="hidden absolute left-0 right-0 top-full mt-1.5 bg-white border border-slate-200 rounded-xl shadow-2xl z-40 max-h-[300px] overflow-y-auto divide-y divide-slate-100"></div>
@@ -199,25 +213,31 @@
       </div>
     </section>
 
-    <!-- TAB 2: 生産性ダッシュボード -->
+    <!-- TAB 2: 生産性ダッシュボード・編集 -->
     <section id="tab-productivity" class="hidden space-y-6">
-      <div id="prodLockScreen" class="bg-white rounded-2xl p-8 border max-w-md mx-auto text-center shadow-lg space-y-4 my-12">
+      <div id="prodLockScreen" class="bg-white rounded-2xl p-8 border max-w-md mx-auto text-center shadow-lg space-y-4 my-12 no-print">
         <h3 class="text-base font-extrabold text-slate-900">管理者セキュリティロック</h3>
         <input type="password" id="prodPinInput" maxlength="8" placeholder="PINコード (初期: 0120)" onkeydown="if(event.key==='Enter') unlockProductivity()" class="w-full text-center tracking-widest text-lg font-mono font-bold py-2.5 bg-slate-50 border rounded-xl">
         <button onclick="unlockProductivity()" class="w-full py-2.5 bg-indigo-600 text-white font-bold rounded-xl">ロック解除</button>
       </div>
+
       <div id="prodDashboardContent" class="hidden space-y-6">
-        <div class="bg-white rounded-2xl p-6 border shadow-xs flex items-center justify-between">
+        <div class="bg-white rounded-2xl p-4 border shadow-xs flex flex-wrap items-center justify-between gap-4 no-print">
           <div>
-            <h2 class="text-lg font-black text-slate-900">作業者別生産性ダッシュボード</h2>
-            <p class="text-xs text-slate-500 mt-0.5">スプレッドシートの検品実績と作業時間記録を自動集計</p>
+            <h2 class="text-lg font-black text-slate-900">作業者別生産性・集計ダッシュボード (データ編集対応)</h2>
+            <p class="text-xs text-slate-500 mt-0.5">送信済み実績の修正・削除および集計レポート確認</p>
           </div>
-          <button onclick="loadProductivityData()" class="px-4 py-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold text-xs rounded-xl border border-indigo-200">
-            🔄 データを更新
-          </button>
+          <div class="flex items-center gap-2">
+            <button onclick="loadProductivityData()" class="px-4 py-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold text-xs rounded-xl border border-indigo-200 flex items-center gap-1.5">
+              <span>🔄 データを更新</span>
+            </button>
+            <button onclick="window.print()" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs rounded-xl shadow-sm flex items-center gap-1.5">
+              <span>印刷 / PDF保存</span>
+            </button>
+          </div>
         </div>
 
-        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 print-card">
           <div class="bg-white p-5 rounded-2xl border shadow-xs">
             <div class="text-xs font-bold text-slate-500">総検品数量</div>
             <div id="dashTotalQty" class="text-2xl font-black text-indigo-700 mt-1">0 個</div>
@@ -232,12 +252,40 @@
           </div>
         </div>
 
-        <div class="bg-white rounded-2xl p-6 border shadow-xs space-y-4">
-          <h3 class="text-sm font-black text-slate-900">作業者別実績サマリー</h3>
+        <!-- 送信済み実績の編集・管理テーブル -->
+        <div class="bg-white rounded-2xl p-6 border shadow-xs space-y-4 print-card">
+          <div class="flex items-center justify-between">
+            <h3 class="text-sm font-black text-slate-900">📋 送信済み検品実績一覧（修正・削除可能）</h3>
+            <span class="text-xs text-slate-400">行をクリックして数量や商品を変更</span>
+          </div>
+          <div class="overflow-x-auto max-h-[350px] overflow-y-auto">
+            <table class="w-full text-left text-xs">
+              <thead class="bg-slate-50 text-slate-500 border-b sticky top-0">
+                <tr>
+                  <th class="p-3 font-bold">日付</th>
+                  <th class="p-3 font-bold">作業者</th>
+                  <th class="p-3 font-bold">商品コード</th>
+                  <th class="p-3 font-bold">品名 / 仕様</th>
+                  <th class="p-3 font-bold">サイズ</th>
+                  <th class="p-3 font-bold">数量</th>
+                  <th class="p-3 font-bold text-right no-print">操作</th>
+                </tr>
+              </thead>
+              <tbody id="dashRecordsTableBody" class="divide-y divide-slate-100">
+                <tr><td colspan="7" class="p-6 text-center text-slate-400 font-bold">データを読み込んでください</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- 作業者別生産性ランキング -->
+        <div class="bg-white rounded-2xl p-6 border shadow-xs space-y-4 print-card">
+          <h3 class="text-sm font-black text-slate-900">④ 作業者別 生産性ランキング & サマリー</h3>
           <div class="overflow-x-auto">
             <table class="w-full text-left text-xs">
               <thead class="bg-slate-50 text-slate-500 border-b">
                 <tr>
+                  <th class="p-3 font-bold">順位</th>
                   <th class="p-3 font-bold">作業者</th>
                   <th class="p-3 font-bold">検品品目数</th>
                   <th class="p-3 font-bold">総検品数</th>
@@ -246,7 +294,28 @@
                 </tr>
               </thead>
               <tbody id="dashWorkerTableBody" class="divide-y divide-slate-100">
-                <tr><td colspan="5" class="p-6 text-center text-slate-400 font-bold">データを読み込んでください</td></tr>
+                <tr><td colspan="6" class="p-6 text-center text-slate-400 font-bold">データなし</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- 検品商品別一覧 -->
+        <div class="bg-white rounded-2xl p-6 border shadow-xs space-y-4 print-card">
+          <h3 class="text-sm font-black text-slate-900">③ 検品された商品の一覧と点数</h3>
+          <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs">
+              <thead class="bg-slate-50 text-slate-500 border-b">
+                <tr>
+                  <th class="p-3 font-bold">商品コード</th>
+                  <th class="p-3 font-bold">品名1</th>
+                  <th class="p-3 font-bold">仕様 / カラー</th>
+                  <th class="p-3 font-bold">サイズ</th>
+                  <th class="p-3 font-bold">総検品数量</th>
+                </tr>
+              </thead>
+              <tbody id="dashItemTableBody" class="divide-y divide-slate-100">
+                <tr><td colspan="5" class="p-6 text-center text-slate-400 font-bold">データなし</td></tr>
               </tbody>
             </table>
           </div>
@@ -265,7 +334,7 @@
   </main>
 
   <!-- MODAL: SUBMIT -->
-  <div id="modalSubmit" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 flex items-center justify-center p-4">
+  <div id="modalSubmit" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 flex items-center justify-center p-4 no-print">
     <div class="bg-white rounded-2xl p-6 max-w-md w-full shadow-2xl space-y-4">
       <h3 class="text-lg font-black text-slate-900 text-center">本日の作業時間入力</h3>
       <div class="space-y-1.5">
@@ -292,6 +361,35 @@
     </div>
   </div>
 
+  <!-- MODAL: EDIT RECORD (実績修正用モーダル) -->
+  <div id="modalEditRecord" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 flex items-center justify-center p-4 no-print">
+    <div class="bg-white rounded-2xl p-6 max-w-md w-full shadow-2xl space-y-4">
+      <h3 class="text-lg font-black text-slate-900 text-center">検品実績の修正・削除</h3>
+      <input type="hidden" id="editRowIndex">
+      <div class="space-y-1.5">
+        <label class="text-xs font-bold text-slate-700">商品コード</label>
+        <input type="text" id="editItemCode" readonly class="w-full px-3 py-2 bg-slate-100 border rounded-xl text-sm font-bold font-mono">
+      </div>
+      <div class="space-y-1.5">
+        <label class="text-xs font-bold text-slate-700">商品名</label>
+        <input type="text" id="editItemName1" class="w-full px-3 py-2 bg-slate-50 border rounded-xl text-sm font-bold">
+      </div>
+      <div class="space-y-1.5">
+        <label class="text-xs font-bold text-slate-700">修正後の検品数量</label>
+        <input type="number" id="editQuantity" min="1" max="9999" class="w-full text-center text-2xl font-black py-2 bg-slate-50 border rounded-xl text-slate-900">
+      </div>
+      <div class="space-y-2 pt-2">
+        <button onclick="submitEditRecord()" class="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-sm rounded-xl">
+          変更を保存して更新
+        </button>
+        <button onclick="submitDeleteRecord()" class="w-full py-2.5 bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold text-xs rounded-xl border border-rose-200">
+          この実績を削除する
+        </button>
+        <button onclick="closeEditModal()" class="w-full py-1.5 text-slate-400 text-xs">キャンセル</button>
+      </div>
+    </div>
+  </div>
+
   <script>
     const DEFAULT_MASTER = [
       { code: 'RMB-001', name1: 'ROMBO', name2: 'BLK WHT XS', size: 'XS', jan: '4580001230011' },
@@ -300,6 +398,7 @@
     ];
     let masterItems = DEFAULT_MASTER;
     let draftRecords = [];
+    let cachedRecords = [];
     let activeScannedItem = null;
     let isAwaitingQuantity = false;
     let html5QrScanner = null;
@@ -552,21 +651,28 @@
       
       if (isGasNativeEnv()) {
         google.script.run
-          .withSuccessHandler(() => { finishSubmitSuccess(); })
-          .withFailureHandler(() => { finishSubmitSuccess(); })
+          .withSuccessHandler(() => { finishSubmitSuccess(recordsToSubmit.length); })
+          .withFailureHandler(() => { finishSubmitSuccess(recordsToSubmit.length); })
           .doPostSimulation(payload);
       } else if (url) {
         fetch(url, { method: 'POST', mode: 'no-cors', body: JSON.stringify(payload) }).catch(() => {});
       }
 
-      finishSubmitSuccess();
+      finishSubmitSuccess(recordsToSubmit.length);
     }
 
-    function finishSubmitSuccess() {
+    function finishSubmitSuccess(count) {
       draftRecords = [];
       saveDrafts();
       closeSubmitModal();
-      showToast('スプレッドシートに送信しました');
+      // 大型ポップアップを表示して作業者に確実に通知
+      document.getElementById('largeSuccessDetail').textContent = `検品実績 ${count}件 のデータと作業時間がスプレッドシートに正常に記録されました。`;
+      document.getElementById('largeSuccessBanner').classList.remove('hidden');
+    }
+
+    function closeLargeSuccessBanner() {
+      document.getElementById('largeSuccessBanner').classList.add('hidden');
+      loadProductivityData();
     }
 
     function setupSearchEvents() {
@@ -631,7 +737,6 @@
       }
     }
 
-    // カメラ関連
     function initCamera() {
       Html5Qrcode.getCameras().then(devices => {
         const select = document.getElementById('cameraSelect');
@@ -697,7 +802,7 @@
       }
     }
 
-    // 生産性ダッシュボードデータ読み込み
+    // 生産性ダッシュボードデータ読み込み＆編集機能
     function loadProductivityData() {
       const effectiveUrl = getEffectiveGasUrl();
       if (isGasNativeEnv()) {
@@ -728,21 +833,41 @@
         return;
       }
 
-      const records = data.records || [];
+      cachedRecords = data.records || [];
       const workTimes = data.workTimes || [];
 
-      let totalQty = records.reduce((sum, r) => sum + (Number(r.quantity) || 0), 0);
+      let totalQty = cachedRecords.reduce((sum, r) => sum + (Number(r.quantity) || 0), 0);
       let totalMins = workTimes.reduce((sum, w) => sum + (Number(w.minutes) || 0), 0);
       let totalHours = totalMins / 60;
       let avgProd = totalHours > 0 ? (totalQty / totalHours).toFixed(1) : '0.0';
 
       document.getElementById('dashTotalQty').textContent = `${totalQty.toLocaleString()} 個`;
-      document.getElementById('dashTotalMinutes',).textContent = `${totalMins.toLocaleString()} 分 (${(totalHours).toFixed(1)}h)`;
+      document.getElementById('dashTotalMinutes').textContent = `${totalMins.toLocaleString()} 分 (${(totalHours).toFixed(1)}h)`;
       document.getElementById('dashAvgProductivity').textContent = `${avgProd} 個/h`;
 
-      // 作業者ごとの集計
+      // 編集用テーブル（送信済み実績一覧）の描画
+      const tbodyRecords = document.getElementById('dashRecordsTableBody');
+      if (cachedRecords.length === 0) {
+        tbodyRecords.innerHTML = '<tr><td colspan="7" class="p-6 text-center text-slate-400 font-bold">検品実績データがありません</td></tr>';
+      } else {
+        tbodyRecords.innerHTML = cachedRecords.map((r, idx) => `
+          <tr class="hover:bg-slate-50">
+            <td class="p-3 text-slate-600">${escapeHtml(r.date)}</td>
+            <td class="p-3 font-bold text-slate-900">${escapeHtml(r.worker)}</td>
+            <td class="p-3 font-mono text-indigo-700">${escapeHtml(r.code)}</td>
+            <td class="p-3 font-semibold">${escapeHtml(r.name1)} (${escapeHtml(r.name2)})</td>
+            <td class="p-3">${escapeHtml(r.size)}</td>
+            <td class="p-3 font-black text-slate-900">${Number(r.quantity || 0).toLocaleString()} 個</td>
+            <td class="p-3 text-right no-print">
+              <button onclick="openEditModal(${idx})" class="px-2.5 py-1 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold rounded-lg text-xs">編集</button>
+            </td>
+          </tr>
+        `).join('');
+      }
+
+      // ④ 作業者別生産性ランキング
       const workerMap = {};
-      records.forEach(r => {
+      cachedRecords.forEach(r => {
         const w = r.worker || '未設定';
         if (!workerMap[w]) workerMap[w] = { kinds: new Set(), qty: 0 };
         workerMap[w].kinds.add(r.code);
@@ -755,30 +880,117 @@
         timeMap[name] = (timeMap[name] || 0) + (Number(w.minutes) || 0);
       });
 
-      const workers = Object.keys(workerMap);
-      const tbody = document.getElementById('dashWorkerTableBody');
-
-      if (workers.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="5" class="p-6 text-center text-slate-400 font-bold">検品実績データがありません</td></tr>';
-        return;
-      }
-
-      tbody.innerHTML = workers.map(w => {
+      const workers = Object.keys(workerMap).map(w => {
         const kinds = workerMap[w].kinds.size;
         const qty = workerMap[w].qty;
         const mins = timeMap[w] || 0;
         const hrs = mins / 60;
-        const prod = hrs > 0 ? (qty / hrs).toFixed(1) : '0.0';
-        return `
-          <tr class="hover:bg-slate-50">
-            <td class="p-3 font-bold text-slate-900">${escapeHtml(w)}</td>
-            <td class="p-3 font-semibold">${kinds} 品目</td>
-            <td class="p-3 font-black text-indigo-700">${qty.toLocaleString()} 個</td>
-            <td class="p-3 font-semibold">${mins} 分</td>
-            <td class="p-3 font-black text-emerald-600">${prod} 個/h</td>
-          </tr>
-        `;
-      }).join('');
+        const prod = hrs > 0 ? Number((qty / hrs).toFixed(1)) : 0;
+        return { name: w, kinds, qty, mins, prod };
+      });
+      workers.sort((a, b) => b.prod - a.prod);
+
+      const tbodyWorker = document.getElementById('dashWorkerTableBody');
+      tbodyWorker.innerHTML = workers.length === 0 ? '<tr><td colspan="6" class="p-6 text-center text-slate-400 font-bold">データなし</td></tr>' : workers.map((w, idx) => `
+        <tr class="hover:bg-slate-50">
+          <td class="p-3 font-black text-indigo-700">#${idx + 1}</td>
+          <td class="p-3 font-bold text-slate-900">${escapeHtml(w.name)}</td>
+          <td class="p-3 font-semibold">${w.kinds} 品目</td>
+          <td class="p-3 font-black text-indigo-900">${w.qty.toLocaleString()} 個</td>
+          <td class="p-3 font-semibold">${w.mins} 分</td>
+          <td class="p-3 font-black text-emerald-600 text-sm">${w.prod} 個/h</td>
+        </tr>
+      `).join('');
+
+      // ③ 検品商品別一覧
+      const itemMap = {};
+      cachedRecords.forEach(r => {
+        const key = r.code;
+        if (!itemMap[key]) {
+          itemMap[key] = { code: r.code, name1: r.name1 || '', name2: r.name2 || '', size: r.size || '', qty: 0 };
+        }
+        itemMap[key].qty += (Number(r.quantity) || 0);
+      });
+      const itemList = Object.values(itemMap);
+      itemList.sort((a, b) => b.qty - a.qty);
+
+      const tbodyItem = document.getElementById('dashItemTableBody');
+      tbodyItem.innerHTML = itemList.length === 0 ? '<tr><td colspan="5" class="p-6 text-center text-slate-400 font-bold">データなし</td></tr>' : itemList.map(i => `
+        <tr class="hover:bg-slate-50">
+          <td class="p-3 font-mono font-bold text-indigo-700">${escapeHtml(i.code)}</td>
+          <td class="p-3 font-bold text-slate-900">${escapeHtml(i.name1)}</td>
+          <td class="p-3 font-semibold text-amber-900">${escapeHtml(i.name2)}</td>
+          <td class="p-3 font-bold">${escapeHtml(i.size)}</td>
+          <td class="p-3 font-black text-slate-900">${i.qty.toLocaleString()} 個</td>
+        </tr>
+      `).join('');
+    }
+
+    // 編集モーダルの制御
+    function openEditModal(index) {
+      const record = cachedRecords[index];
+      if (!record) return;
+      document.getElementById('editRowIndex').value = index + 2; // スプレッドシートの行番号 (ヘッダー含むため index + 2)
+      document.getElementById('editItemCode').value = record.code;
+      document.getElementById('editItemName1').value = record.name1;
+      document.getElementById('editQuantity').value = record.quantity;
+      document.getElementById('modalEditRecord').classList.remove('hidden');
+    }
+
+    function closeEditModal() {
+      document.getElementById('modalEditRecord').classList.add('hidden');
+    }
+
+    function submitEditRecord() {
+      const rowIndex = parseInt(document.getElementById('editRowIndex').value, 10);
+      const newName1 = document.getElementById('editItemName1').value.trim();
+      const newQty = parseInt(document.getElementById('editQuantity').value, 10) || 1;
+
+      const payload = {
+        action: 'updateRecord',
+        rowIndex: rowIndex,
+        name1: newName1,
+        quantity: newQty
+      };
+
+      sendRecordAction(payload, '実績を更新しました');
+    }
+
+    function submitDeleteRecord() {
+      if (!confirm('本当にこの検品実績を削除しますか？')) return;
+      const rowIndex = parseInt(document.getElementById('editRowIndex').value, 10);
+
+      const payload = {
+        action: 'deleteRecord',
+        rowIndex: rowIndex
+      };
+
+      sendRecordAction(payload, '実績を削除しました');
+    }
+
+    function sendRecordAction(payload, successMsg) {
+      const url = getEffectiveGasUrl();
+      if (isGasNativeEnv()) {
+        google.script.run
+          .withSuccessHandler(() => {
+            closeEditModal();
+            showToast(successMsg);
+            loadProductivityData();
+          })
+          .withFailureHandler(() => {
+            showToast('処理に失敗しました');
+          })
+          .doPostSimulation(payload);
+      } else if (url) {
+        fetch(url, { method: 'POST', mode: 'no-cors', body: JSON.stringify(payload) })
+          .then(() => {
+            closeEditModal();
+            showToast(successMsg);
+            setTimeout(loadProductivityData, 1000);
+          }).catch(() => {
+            showToast('処理に失敗しました');
+          });
+      }
     }
 
     function switchTab(tab) {
