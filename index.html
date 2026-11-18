@@ -115,41 +115,62 @@
             </div>
           </div>
 
-          <div id="scannedItemCockpit" class="bg-white rounded-2xl p-5 border-2 border-indigo-200 shadow-md">
+          <!-- コックピット（スキャン後・手動選択後の数量入力エリア） -->
+          <div id="scannedItemCockpit" class="bg-white rounded-2xl p-5 border-2 border-indigo-200 shadow-md transition-all">
             <div id="cockpitIdleState" class="py-6 text-center space-y-2">
-              <h3 class="text-sm font-extrabold text-slate-800">カメラにバーコードをかざしてください</h3>
+              <div class="w-12 h-12 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center mx-auto border border-indigo-100">
+                <svg class="w-6 h-6 animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z"/></svg>
+              </div>
+              <h3 class="text-sm font-extrabold text-slate-800">カメラにバーコードをかざすか、下の検索をご利用ください</h3>
+              <p class="text-xs text-slate-500 max-w-sm mx-auto">
+                選択完了後、数量を入力してリストに追加できます。
+              </p>
             </div>
             <div id="cockpitActiveState" class="hidden space-y-4">
-              <div class="bg-white border-2 border-indigo-300 p-4 rounded-xl space-y-2.5">
+              <div class="bg-white border-2 border-indigo-300 p-4 rounded-xl shadow-xs space-y-2.5">
                 <div class="flex items-start justify-between">
                   <div class="flex items-center gap-2">
+                    <span class="inline-flex items-center gap-1 text-[11px] font-black bg-emerald-600 text-white px-2 py-0.5 rounded">選択完了</span>
                     <span id="activeItemCode" class="text-sm font-black text-indigo-900 font-mono">RMB-001</span>
+                    <span class="text-xs font-mono text-slate-400">JAN: <span id="activeItemJan" class="font-mono">4580001230011</span></span>
                   </div>
-                  <button onclick="cancelActiveScan()" class="text-slate-400 hover:text-slate-600">✕</button>
+                  <button onclick="cancelActiveScan()" class="text-slate-400 hover:text-slate-600 p-1 rounded-lg">✕</button>
                 </div>
                 <h4 id="activeItemName1" class="text-base font-black text-slate-900">ROMBO</h4>
-                <div class="bg-amber-50 p-3 rounded-xl flex items-center justify-between gap-3">
+                <div class="bg-amber-50 border border-amber-200 rounded-xl p-3 flex flex-wrap items-center justify-between gap-3">
+                  <span class="text-xs font-black bg-amber-200 text-amber-900 px-2 py-0.5 rounded">仕様</span>
                   <span id="activeItemName2" class="text-base font-black text-amber-950">BLK WHT S</span>
-                  <span id="activeItemSize" class="text-xl font-black text-indigo-900 bg-white px-3 py-0.5 rounded-lg border">M</span>
+                  <span class="text-xs font-black bg-slate-900 text-white px-2 py-0.5 rounded">サイズ</span>
+                  <span id="activeItemSize" class="text-xl font-black text-indigo-900 bg-white px-3 py-0.5 rounded-lg border-2 border-indigo-300">M</span>
                 </div>
               </div>
 
               <div class="bg-indigo-50/40 p-4 rounded-xl border border-indigo-100 space-y-3">
+                <label class="text-xs font-black text-indigo-900 flex items-center gap-1.5">
+                  2. テンキーで検品数量を入力 & 確定
+                </label>
                 <div class="flex items-center gap-3">
                   <button type="button" onclick="adjustTenkeyQty(-1)" class="w-12 h-12 rounded-xl bg-white text-slate-800 text-2xl font-bold border">-</button>
-                  <input type="number" id="tenkeyQtyInput" min="1" max="9999" value="1" onkeydown="handleTenkeyKeyDown(event)" class="flex-1 text-center text-3xl font-black py-2.5 bg-white border-2 border-indigo-400 rounded-xl">
+                  <input type="number" id="tenkeyQtyInput" min="1" max="9999" value="1" onkeydown="handleTenkeyKeyDown(event)" class="flex-1 text-center text-3xl font-black py-2.5 bg-white border-2 border-indigo-400 rounded-xl text-slate-900">
                   <button type="button" onclick="adjustTenkeyQty(1)" class="w-12 h-12 rounded-xl bg-white text-indigo-700 text-2xl font-bold border">+</button>
+                </div>
+                <div class="grid grid-cols-4 gap-2">
+                  <button type="button" onclick="setTenkeyQty(1)" class="py-1 bg-white text-xs font-bold rounded border">1個</button>
+                  <button type="button" onclick="setTenkeyQty(5)" class="py-1 bg-white text-xs font-bold rounded border">5個</button>
+                  <button type="button" onclick="setTenkeyQty(10)" class="py-1 bg-white text-xs font-bold rounded border">10個</button>
+                  <button type="button" onclick="setTenkeyQty(20)" class="py-1 bg-white text-xs font-bold rounded border">20個</button>
                 </div>
               </div>
 
-              <button type="button" onclick="confirmActiveItem()" class="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-black text-sm rounded-xl">
-                3. リストに追加
+              <button type="button" onclick="confirmActiveItem()" class="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-black text-sm rounded-xl shadow-md transition">
+                3. 検品確認リストに追加
               </button>
             </div>
           </div>
 
+          <!-- 手動検索エリア -->
           <div class="bg-white rounded-2xl p-4 border border-slate-200 shadow-xs relative">
-            <input type="text" id="searchInput" class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold" placeholder="手動検索（スペース区切りAND検索）...">
+            <input type="text" id="searchInput" class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold placeholder:text-slate-400 focus:outline-none focus:border-indigo-600" placeholder="手動検索（スペース区切りAND検索 / 品名・品番・カラー・サイズ）...">
             <div id="suggestBox" class="hidden absolute left-0 right-0 top-full mt-1.5 bg-white border border-slate-200 rounded-xl shadow-2xl z-40 max-h-[300px] overflow-y-auto divide-y divide-slate-100"></div>
           </div>
         </div>
@@ -309,9 +330,7 @@
               document.getElementById('headerMasterCount').textContent = `マスタ: ${masterItems.length}件`;
             }
           })
-          .withFailureHandler(() => {
-            // 失敗時はデフォルトまたはキャッシュを使用
-          })
+          .withFailureHandler(() => {})
           .getMaster();
       } else if (effectiveUrl) {
         fetch(effectiveUrl + '?action=getMaster')
@@ -376,6 +395,85 @@
       document.getElementById('modalSubmit').classList.add('hidden');
     }
 
+    // バーコードスキャンまたは手動選択時に中央コックピットへセット
+    function setActiveScannedItem(item) {
+      activeScannedItem = item;
+      isAwaitingQuantity = true;
+
+      document.getElementById('activeItemCode').textContent = item.code;
+      document.getElementById('activeItemName1').textContent = item.name1;
+      document.getElementById('activeItemName2').textContent = `${item.name2} · ${item.size}`;
+      document.getElementById('activeItemSize').textContent = item.size;
+      document.getElementById('activeItemJan').textContent = item.jan || '-';
+
+      const qtyInput = document.getElementById('tenkeyQtyInput');
+      qtyInput.value = 1;
+
+      document.getElementById('cockpitIdleState').classList.add('hidden');
+      document.getElementById('cockpitActiveState').classList.remove('hidden');
+
+      setTimeout(() => {
+        qtyInput.focus();
+        qtyInput.select();
+      }, 50);
+    }
+
+    function cancelActiveScan() {
+      activeScannedItem = null;
+      isAwaitingQuantity = false;
+      document.getElementById('cockpitActiveState').classList.add('hidden');
+      document.getElementById('cockpitIdleState').classList.remove('hidden');
+    }
+
+    function adjustTenkeyQty(delta) {
+      const input = document.getElementById('tenkeyQtyInput');
+      let val = (parseInt(input.value, 10) || 1) + delta;
+      if (val < 1) val = 1;
+      input.value = val;
+    }
+
+    function setTenkeyQty(val) {
+      document.getElementById('tenkeyQtyInput').value = val;
+    }
+
+    function handleTenkeyKeyDown(e) {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        confirmActiveItem();
+      } else if (e.key === 'Escape') {
+        cancelActiveScan();
+      }
+    }
+
+    function confirmActiveItem() {
+      if (!activeScannedItem) return;
+      const input = document.getElementById('tenkeyQtyInput');
+      const qty = Math.max(1, parseInt(input.value, 10) || 1);
+      const worker = document.getElementById('workerInput').value.trim() || '山田';
+      const today = getJstDateString();
+
+      const existingIdx = draftRecords.findIndex(r => r.code === activeScannedItem.code);
+      if (existingIdx >= 0) {
+        draftRecords[existingIdx].quantity += qty;
+      } else {
+        draftRecords.unshift({
+          id: 'draft_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4),
+          date: today,
+          worker: worker,
+          code: activeScannedItem.code,
+          name1: activeScannedItem.name1,
+          name2: activeScannedItem.name2,
+          size: activeScannedItem.size,
+          jan: activeScannedItem.jan || '',
+          quantity: qty
+        });
+      }
+
+      saveDrafts();
+      showToast(`${activeScannedItem.name1} (${qty}個) を追加しました`);
+      cancelActiveScan();
+    }
+
     function executeSubmit(includeTime) {
       const worker = document.getElementById('modalWorkerInput').value.trim() || '山田';
       const mins = includeTime ? (parseInt(document.getElementById('workMinutesInput').value, 10) || 0) : 0;
@@ -394,13 +492,9 @@
       
       if (isGasNativeEnv()) {
         google.script.run
-          .withSuccessHandler(() => {
-            finishSubmitSuccess();
-          })
-          .withFailureHandler(() => {
-            finishSubmitSuccess();
-          })
-          .doPostSimulation(payload); // 内部処理用
+          .withSuccessHandler(() => { finishSubmitSuccess(); })
+          .withFailureHandler(() => { finishSubmitSuccess(); })
+          .doPostSimulation(payload);
       } else if (url) {
         fetch(url, { method: 'POST', mode: 'no-cors', body: JSON.stringify(payload) }).catch(() => {});
       }
@@ -428,14 +522,29 @@
           }).slice(0, 15);
           
           if (filtered.length > 0) {
-            suggestBox.innerHTML = filtered.map(item => `
-              <div onclick="selectSearchItem('${item.code}')" class="p-3 hover:bg-indigo-50 cursor-pointer text-xs">
-                <span class="font-bold text-indigo-700">${item.code}</span> - ${item.name1} (${item.name2} / ${item.size})
+            suggestBox.innerHTML = `
+              <div class="px-3 py-1.5 bg-slate-50 text-[11px] text-slate-500 font-bold sticky top-0 border-b flex justify-between">
+                <span>検索候補: ${filtered.length}件</span>
+                <span class="text-indigo-600">「選択」ボタンで数量入力へ</span>
+              </div>
+            ` + filtered.map(item => `
+              <div class="p-3 hover:bg-indigo-50/80 transition flex items-center justify-between gap-2 border-b border-slate-100">
+                <div class="pr-2 flex-1 min-w-0 cursor-pointer" onclick="selectSearchItem('${item.code}')">
+                  <div class="flex items-center gap-2">
+                    <span class="text-xs font-bold text-indigo-700 font-mono bg-indigo-50 px-2 py-0.5 rounded">${escapeHtml(item.code)}</span>
+                    <span class="text-sm font-bold text-slate-900 truncate">${escapeHtml(item.name1)}</span>
+                  </div>
+                  <div class="text-xs text-amber-900 mt-1 font-semibold">${escapeHtml(item.name2)} / <span class="text-indigo-900 font-bold">${escapeHtml(item.size)}</span></div>
+                </div>
+                <button type="button" onclick="selectSearchItem('${item.code}')" class="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl shadow-2xs flex-shrink-0">
+                  選択 ➜
+                </button>
               </div>
             `).join('');
             suggestBox.classList.remove('hidden');
           } else {
-            suggestBox.classList.add('hidden');
+            suggestBox.innerHTML = '<div class="p-4 text-center text-xs font-bold text-rose-600 bg-rose-50">⚠️ 一致する商品が見つかりません</div>';
+            suggestBox.classList.remove('hidden');
           }
         } else {
           suggestBox.classList.add('hidden');
@@ -446,21 +555,9 @@
     function selectSearchItem(code) {
       const item = masterItems.find(m => m.code === code);
       if (item) {
-        draftRecords.push({
-          id: 'draft_' + Date.now(),
-          date: getJstDateString(),
-          worker: document.getElementById('workerInput').value,
-          code: item.code,
-          name1: item.name1,
-          name2: item.name2,
-          size: item.size,
-          jan: item.jan,
-          quantity: 1
-        });
-        saveDrafts();
-        showToast(`${item.name1} を追加しました`);
         document.getElementById('searchInput').value = '';
         document.getElementById('suggestBox').classList.add('hidden');
+        setActiveScannedItem(item);
       }
     }
 
@@ -487,6 +584,16 @@
       localStorage.setItem('gas_insp_url', document.getElementById('gasUrlInput').value.trim());
       showToast('URLを保存しました');
       refreshMaster();
+    }
+
+    function escapeHtml(str) {
+      if (!str) return '';
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
     }
   </script>
 </body>
