@@ -97,8 +97,7 @@
   <main class="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8">
 
     <!-- ========================================================================= -->
-    <!-- TAB 1: PC 検品ステーション (超簡単入力フロー) -->
-    <!-- 1. WEBカメラ読込 -> 2. テンキー数量入力&Enter -> 3. 直ちにカメラ再開 -> 4. 確認リスト -> 5. 送信 -->
+    <!-- TAB 1: PC 検品ステーション -->
     <!-- ========================================================================= -->
     <section id="tab-workstation" class="block space-y-6">
       
@@ -259,7 +258,7 @@
             </div>
           </div>
 
-          <!-- Fallback Manual Incremental Search (AND search with space split) -->
+          <!-- Fallback Manual Incremental Search -->
           <div class="bg-white rounded-2xl p-4 border border-slate-200 shadow-xs relative">
             <div class="flex items-center justify-between mb-2">
               <label for="searchInput" class="text-xs font-bold text-slate-700 flex items-center gap-1.5">
@@ -282,7 +281,7 @@
               </button>
             </div>
 
-            <!-- Suggestions container (Max 20 items scrollable) -->
+            <!-- Suggestions container -->
             <div id="suggestBox" class="hidden absolute left-0 right-0 top-full mt-1.5 bg-white border border-slate-200 rounded-xl shadow-2xl z-40 max-h-[300px] overflow-y-auto divide-y divide-slate-100"></div>
           </div>
         </div>
@@ -319,7 +318,7 @@
               </div>
             </div>
 
-            <!-- List Footer Actions: Clear All & Submit -->
+            <!-- List Footer Actions -->
             <div class="p-4 border-t border-slate-200/80 bg-slate-50/70 rounded-b-2xl space-y-3">
               <div class="flex items-center justify-between text-xs text-slate-600 font-medium">
                 <span>送信前チェック完了後、送信ボタンを押してください</span>
@@ -348,11 +347,11 @@
     </section>
 
     <!-- ========================================================================= -->
-    <!-- TAB 2: 管理者用「作業者別生産性ダッシュボード」（PIN 0120保護） -->
+    <!-- TAB 2: 管理者用生産性ダッシュボード -->
     <!-- ========================================================================= -->
     <section id="tab-productivity" class="hidden space-y-6">
       
-      <!-- Security Lock Overlay (If not unlocked) -->
+      <!-- Security Lock Overlay -->
       <div id="prodLockScreen" class="bg-white rounded-2xl p-8 border border-slate-200 max-w-md mx-auto text-center shadow-lg space-y-4 my-12">
         <div class="w-14 h-14 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center mx-auto border border-indigo-100">
           <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
@@ -425,7 +424,7 @@
           </div>
         </div>
 
-        <!-- Month-by-Month Highlight Cards (一目でわかる月別検品数) -->
+        <!-- Month-by-Month Highlight Cards -->
         <div class="bg-gradient-to-br from-indigo-900 to-slate-900 rounded-2xl p-5 text-white shadow-md border border-indigo-700/50 space-y-3">
           <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-indigo-700/60 pb-3">
             <div>
@@ -441,28 +440,24 @@
 
         <!-- 4 KPI Cards -->
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          <!-- KPI 1: 総検品数量 -->
           <div class="bg-white rounded-2xl p-5 border border-slate-200 shadow-xs print-card">
             <div class="text-xs font-bold text-slate-500 uppercase tracking-wider">総検品数量</div>
             <div id="kpiTotalQty" class="text-2xl sm:text-3xl font-black text-indigo-700 mt-1">0 個</div>
             <div class="text-[11px] text-slate-400 mt-1">集計期間内の確定実績</div>
           </div>
 
-          <!-- KPI 2: 総検品作業時間 -->
           <div class="bg-white rounded-2xl p-5 border border-slate-200 shadow-xs print-card">
             <div class="text-xs font-bold text-slate-500 uppercase tracking-wider">総検品作業時間</div>
             <div id="kpiTotalMinutes" class="text-2xl sm:text-3xl font-black text-slate-900 mt-1">0 分</div>
             <div id="kpiTotalHours" class="text-[11px] text-slate-400 mt-1">(約 0.0 時間)</div>
           </div>
 
-          <!-- KPI 3: 1点あたり検品時間 -->
           <div class="bg-white rounded-2xl p-5 border border-slate-200 shadow-xs print-card">
             <div class="text-xs font-bold text-slate-500 uppercase tracking-wider">1点あたり検品時間</div>
             <div id="kpiSecPerItem" class="text-2xl sm:text-3xl font-black text-emerald-600 mt-1">0.0 秒</div>
             <div class="text-[11px] text-slate-400 mt-1">総作業時間 ÷ 総数量</div>
           </div>
 
-          <!-- KPI 4: 1時間あたり検品数量 -->
           <div class="bg-white rounded-2xl p-5 border border-slate-200 shadow-xs print-card">
             <div class="text-xs font-bold text-slate-500 uppercase tracking-wider">1時間あたり検品数量</div>
             <div id="kpiItemsPerHour" class="text-2xl sm:text-3xl font-black text-indigo-600 mt-1">0 個/h</div>
@@ -472,7 +467,6 @@
 
         <!-- Weekly & Monthly Charts -->
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <!-- Chart 1: 週別検品数量 & 作業時間 -->
           <div class="bg-white rounded-2xl p-5 border border-slate-200 shadow-xs print-card space-y-3">
             <div class="flex items-center justify-between">
               <h3 class="text-sm font-black text-slate-900 flex items-center gap-1.5">
@@ -485,7 +479,6 @@
             </div>
           </div>
 
-          <!-- Chart 2: 月別検品推移 -->
           <div class="bg-white rounded-2xl p-5 border border-slate-200 shadow-xs print-card space-y-3">
             <div class="flex items-center justify-between">
               <h3 class="text-sm font-black text-slate-900 flex items-center gap-1.5">
@@ -532,9 +525,8 @@
           </div>
         </div>
 
-        <!-- Product Code & Color & Size Breakdown Tables (細かな集計・データ収集) -->
+        <!-- Product Code & Color & Size Breakdown Tables -->
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <!-- Product Breakdown Table -->
           <div class="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden print-card">
             <div class="p-4 border-b border-slate-200 bg-slate-50 flex items-center justify-between">
               <h3 class="text-sm font-black text-slate-900">📦 商品コード・品番別 検品集計</h3>
@@ -557,9 +549,7 @@
             </div>
           </div>
 
-          <!-- Color & Size Breakdown -->
           <div class="space-y-4">
-            <!-- Color Breakdown -->
             <div class="bg-white rounded-2xl border border-slate-200 shadow-xs p-4 print-card">
               <div class="flex items-center justify-between pb-2 border-b border-slate-100 mb-3">
                 <h3 class="text-sm font-black text-slate-900">🎨 カラー・バリエーション別 集計</h3>
@@ -570,7 +560,6 @@
               </div>
             </div>
 
-            <!-- Size Breakdown -->
             <div class="bg-white rounded-2xl border border-slate-200 shadow-xs p-4 print-card">
               <div class="flex items-center justify-between pb-2 border-b border-slate-100 mb-3">
                 <h3 class="text-sm font-black text-slate-900">📏 サイズ別 集計</h3>
@@ -593,19 +582,19 @@
       <div class="bg-white rounded-2xl p-6 border border-slate-200 shadow-xs space-y-4">
         <h3 class="text-base font-black text-slate-900">Google Apps Script (GAS) 連携設定</h3>
         <p class="text-xs text-slate-600 leading-relaxed">
-          自身が作成したGoogleスプレッドシートのWeb App URLを登録すると、スキャン結果が直接クラウドへ蓄積されます。GAS環境上で開いている場合はURL設定不要で自動連携します。
+          自身が作成したGoogleスプレッドシートのWeb App URLを登録すると、スキャン結果が直接クラウドへ蓄積されます。
         </p>
 
         <div id="gasSettingsAutoBanner" class="hidden p-3.5 rounded-xl bg-emerald-50 border border-emerald-200 text-xs text-emerald-900 flex items-start gap-2.5">
           <svg class="w-4 h-4 text-emerald-600 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
           <div>
-            <div class="font-bold">GAS環境を自動認識しました（URL手動設定なしでも自動連携中）</div>
+            <div class="font-bold">GAS環境を自動認識しました</div>
             <div id="gasSettingsAutoDetail" class="text-[11px] text-emerald-800 mt-0.5">google.script.run を使用して直接スプレッドシートと同期しています。</div>
           </div>
         </div>
 
         <div class="space-y-1.5">
-          <label class="text-xs font-bold text-slate-700">GASウェブアプリURL (exec) ※外部ブラウザから接続する場合</label>
+          <label class="text-xs font-bold text-slate-700">GASウェブアプリURL (exec) ※GitHub Pages等から接続する場合</label>
           <div class="flex gap-2">
             <input 
               type="url" 
@@ -629,7 +618,7 @@
   </main>
 
   <!-- ========================================================================= -->
-  <!-- MODAL: 5. スプレッドシートへ送信 (作業者名 & 作業時間入力) -->
+  <!-- MODAL: 5. スプレッドシートへ送信 -->
   <!-- ========================================================================= -->
   <div id="modalSubmit" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 flex items-center justify-center p-4">
     <div class="bg-white rounded-2xl p-6 max-w-md w-full shadow-2xl space-y-4 border border-slate-100">
@@ -652,7 +641,6 @@
         </div>
       </div>
 
-      <!-- Worker Input & Inspection Date (Calendar) in Modal -->
       <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <div class="space-y-1.5">
           <label class="text-xs font-bold text-slate-700">記録する作業者名</label>
@@ -672,7 +660,6 @@
         <button type="button" onclick="resetModalInspectionDate()" class="text-indigo-700 hover:underline font-bold flex-shrink-0">今日に戻す</button>
       </div>
 
-      <!-- Work Minutes Input -->
       <div class="space-y-2">
         <div class="flex items-center justify-between">
           <label id="modalWorkMinutesLabel" class="text-xs font-bold text-slate-700">本日の作業時間（分単位）</label>
@@ -689,7 +676,6 @@
           >
           <span class="text-sm font-bold text-slate-600">分</span>
         </div>
-        <!-- Quick minute buttons -->
         <div class="grid grid-cols-6 gap-1.5">
           <button type="button" onclick="setWorkMinutes(15)" class="py-1 bg-slate-100 hover:bg-slate-200 text-xs font-bold rounded text-slate-700">15分</button>
           <button type="button" onclick="setWorkMinutes(30)" class="py-1 bg-slate-100 hover:bg-slate-200 text-xs font-bold rounded text-slate-700">30分</button>
@@ -715,7 +701,7 @@
     </div>
   </div>
 
-  <!-- In-app Clear Confirmation Modal -->
+  <!-- Clear Confirmation Modal -->
   <div id="modalClearConfirm" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 flex items-center justify-center p-4">
     <div class="bg-white rounded-2xl p-6 max-w-sm w-full shadow-2xl space-y-4 border border-slate-100">
       <div class="text-center">
@@ -736,7 +722,7 @@
     </div>
   </div>
 
-  <!-- Unregistered Barcode Alert Modal (誤登録防止) -->
+  <!-- Unregistered Barcode Alert Modal -->
   <div id="modalUnregisteredAlert" class="hidden fixed inset-0 bg-slate-900/75 backdrop-blur-xs z-50 flex items-center justify-center p-4">
     <div class="bg-white rounded-2xl p-6 max-w-md w-full shadow-2xl border-2 border-rose-500 space-y-4">
       <div class="flex items-start gap-3">
@@ -757,10 +743,6 @@
         <div id="unregisteredAlertCode" class="font-mono text-base font-black text-rose-950 break-all">-</div>
       </div>
 
-      <p class="text-[11px] text-slate-500 leading-relaxed">
-        スプレッドシートの「商品マスタ」シートへ商品を登録してから右上の「マスタ更新」を押すか、手動検索で該当商品をお探しください。
-      </p>
-
       <div class="flex flex-wrap gap-2 pt-1">
         <button type="button" onclick="retryMasterFromUnregisteredAlert()" class="px-3.5 py-2.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-xs font-bold rounded-xl border border-indigo-200 transition">
           マスタ再同期
@@ -775,11 +757,8 @@
     </div>
   </div>
 
-  <!-- ========================================================================= -->
-  <!-- JAVASCRIPT LOGIC (Self-Contained & Optimized for PC USB Webcam) -->
-  <!-- ========================================================================= -->
+  <!-- JAVASCRIPT LOGIC (Fixed asynchronous list clearance bug) -->
   <script>
-    // Injected by Code.gs HtmlService template when hosted on GAS (guarded for standalone preview)
     const AUTO_GAS_URL_RAW = '<?= autoGasUrl ?>';
     const AUTO_GAS_URL = (AUTO_GAS_URL_RAW && !AUTO_GAS_URL_RAW.includes('<?') && AUTO_GAS_URL_RAW.startsWith('http'))
       ? AUTO_GAS_URL_RAW
@@ -805,7 +784,6 @@
       return '';
     }
 
-    // JST (Asia/Tokyo) Date Utilities - prevents UTC 00:00-08:59 off-by-one day bug
     function getJstDateString(date = new Date()) {
       const parts = new Intl.DateTimeFormat('ja-JP', {
         timeZone: 'Asia/Tokyo',
@@ -842,7 +820,6 @@
       return `${get('year')}-${get('month')}-${get('day')} ${get('hour')}:${get('minute')}:${get('second')}`;
     }
 
-    // Audio Feedback using Web Audio API
     function playSound(type) {
       try {
         const AudioCtx = window.AudioContext || window.webkitAudioContext;
@@ -895,7 +872,6 @@
       } catch (e) {}
     }
 
-    // Default master items
     const DEFAULT_MASTER = [
       { code: 'RMB-001', name1: 'ROMBO', name2: 'BLK WHT XS', size: 'XS', jan: '4580001230011' },
       { code: 'RMB-002', name1: 'ROMBO', name2: 'BLK WHT S', size: 'S', jan: '4580001230028' },
@@ -935,15 +911,13 @@
     let lastScannedBarcode = { code: '', time: 0 };
     let isProdUnlocked = false;
 
-    // Cloud Productivity Dataset (null when not fetched yet; fallback to localStorage)
     let cloudHistoryData = null;
     let cloudWorkTimesData = null;
-    let prodDataSource = 'local'; // 'cloud' | 'local'
+    let prodDataSource = 'local';
     let isSyncingCloud = false;
     let lastCloudSyncTime = null;
     let cloudSyncErrorMessage = null;
 
-    // On Load
     window.addEventListener('DOMContentLoaded', () => {
       loadStorage();
       setupSearchEvents();
@@ -1018,7 +992,6 @@
       setTimeout(() => el.classList.add('hidden'), 2500);
     }
 
-    // Camera device initialization & J5create JVU250 prioritization
     function initCameraDevices() {
       if (typeof Html5Qrcode === 'undefined') return;
       Html5Qrcode.getCameras().then(devices => {
@@ -1114,7 +1087,6 @@
       }
     }
 
-    // Step 1: Barcode Scanned -> Validate Master -> Beep -> Auto-focus Tenkey Quantity Input (or Alert if Unregistered)
     function handleBarcodeScanned(barcode) {
       if (isAwaitingQuantity || isUnregisteredAlertOpen) return;
 
@@ -1216,7 +1188,6 @@
       }
     }
 
-    // Step 2 & 3: Commit Quantity -> Chime -> Re-arm Camera scanning
     function confirmActiveItem() {
       if (!activeScannedItem) return;
       const input = document.getElementById('tenkeyQtyInput');
@@ -1224,7 +1195,6 @@
       const worker = document.getElementById('workerInput').value.trim() || '山田';
       const today = getJstDateString();
 
-      // Check if existing record in drafts
       const existingIdx = draftRecords.findIndex(r => r.code === activeScannedItem.code);
       if (existingIdx >= 0) {
         draftRecords[existingIdx].quantity += qty;
@@ -1245,12 +1215,9 @@
       saveDrafts();
       playSound('confirm');
       showToast(`${activeScannedItem.name1} (${qty}個) を追加しました`);
-
-      // Step 3: Re-arm camera scanning for next item!
       cancelActiveScan();
     }
 
-    // Drafts UI
     function updateDraftUI() {
       const count = draftRecords.length;
       const totalQty = draftRecords.reduce((sum, r) => sum + r.quantity, 0);
@@ -1327,7 +1294,6 @@
       });
     }
 
-    // Modal Clear Confirm
     let clearConfirmCallback = null;
     function openClearConfirmModal(title, msg, onConfirm) {
       document.getElementById('clearConfirmTitle').textContent = title;
@@ -1344,7 +1310,6 @@
       clearConfirmCallback = null;
     }
 
-    // Step 5: Submit Modal
     function openSubmitModal() {
       if (draftRecords.length === 0) {
         alert('検品確認リストに商品がありません。\nバーコードをスキャンするか、手動検索から商品を追加してください。');
@@ -1411,6 +1376,7 @@
       document.getElementById('workMinutesInput').value = mins;
     }
 
+    // 修正ポイント: 通信の成功または失敗の確実な応答を待ってからリストをクリアするよう変更
     function executeSubmit(includeTime) {
       if (draftRecords.length === 0) {
         alert('送信対象の検品データがありません。バーコードをスキャンまたは検索して追加してください。');
@@ -1442,7 +1408,7 @@
       const count = recordsToSubmit.length;
       const effectiveUrl = getEffectiveGasUrl();
 
-      // Save locally to history & work times for instant offline fallback
+      // ローカル履歴へのバックアップ保持
       let history = [];
       try { history = JSON.parse(localStorage.getItem(STORAGE_KEY.HISTORY) || '[]'); } catch {}
       history.push(...recordsToSubmit);
@@ -1461,50 +1427,61 @@
         workTime: workTimeRecord
       };
 
-      const finishLocalUI = () => {
+      // サーバー応答完了後にリストクリアとモーダル閉鎖を行うコールバック
+      const handleSuccessFinish = (isCloudSuccess, responseMsg) => {
         draftRecords = [];
         saveDrafts();
         closeSubmitModal();
         switchTab('workstation');
+        showToast('送信が完了しました！');
+        alert('【送信が完了しました】\nGoogleスプレッドシートへのデータ送信（' + count + '件）が成功しました。\n\n' + (responseMsg || ''));
+        if (isProdUnlocked) fetchProductivityFromGas(false);
+      };
+
+      const handleFailureFallback = (errorMsg) => {
+        closeSubmitModal();
+        alert('【通信エラー・ローカル保存に切り替えました】\nスプレッドシートへの送信に失敗しましたが、データは端末内に安全に保存されています。\n\nエラー詳細: ' + errorMsg + '\n\n※「設定・GAS連携」タブのURLやGASのデプロイ権限（全員）をご確認ください。');
       };
 
       if (isGasNativeEnv()) {
-        finishLocalUI();
         google.script.run
-          .withSuccessHandler(() => {
-            showToast('送信が完了しました！(GAS直接連携)');
-            alert('【送信が完了しました】\nGoogleスプレッドシートへ検品実績（' + count + '件）を送信完了しました！\n検品ステーション画面に戻りました。続けて検品作業を行えます。');
-            if (isProdUnlocked) fetchProductivityFromGas(false);
+          .withSuccessHandler((res) => {
+            if (res && res.success) {
+              handleSuccessFinish(true, 'GAS直接連携による同期完了');
+            } else {
+              handleFailureFallback((res && res.error) || '不明なサーバーエラー');
+            }
           })
           .withFailureHandler((err) => {
-            console.warn('google.script.run submit失敗:', err);
-            showToast('送信が完了しました！(ローカル保存)');
-            alert('【送信が完了しました (ローカル保存)】\nデータはブラウザ内に正常に保存され、検品ステーション画面に戻りました。\n\n※スプレッドシートへの同期でエラーが発生しました。\n理由: ' + (err && err.message ? err.message : 'GAS通信失敗'));
+            handleFailureFallback(err && err.message ? err.message : 'google.script.run通信失敗');
           })
           .apiSubmitReport(payload);
       } else if (effectiveUrl) {
-        finishLocalUI();
         fetch(effectiveUrl, {
           method: 'POST',
           headers: { 'Content-Type': 'text/plain;charset=utf-8' },
           body: JSON.stringify(payload)
-        }).then(() => {
-          showToast('送信が完了しました！');
-          alert('【送信が完了しました】\nGoogleスプレッドシートへ検品実績（' + count + '件）を送信完了しました！\n検品ステーション画面に戻りました。続けて検品作業を行えます。');
-          if (isProdUnlocked) fetchProductivityFromGas(false);
-        }).catch(err => {
-          console.warn('GAS POST失敗:', err);
-          showToast('送信が完了しました！(ローカル保存)');
-          alert('【送信が完了しました (ローカル保存)】\nデータはブラウザ内に正常に保存され、検品ステーション画面に戻りました。\n\n※スプレッドシートへの通信でエラーが発生しました。\n理由: ' + (err.message || '通信失敗') + '\n「設定・GAS連携」タブでURLとアクセス権設定（全員）をご確認ください。');
+        })
+        .then(res => {
+          if (!res.ok) throw new Error('HTTP status ' + res.status);
+          return res.json();
+        })
+        .then(data => {
+          if (data && data.success) {
+            handleSuccessFinish(true, 'Web App経由の同期完了');
+          } else {
+            throw new Error((data && data.error) || 'サーバーエラー応答');
+          }
+        })
+        .catch(err => {
+          handleFailureFallback(err.message || 'ネットワーク通信失敗');
         });
       } else {
-        finishLocalUI();
-        showToast('送信が完了しました！(アプリ内保存)');
-        alert('【送信が完了しました】\n検品実績（' + count + '件）をアプリ内に保存しました。\n検品ステーション画面に戻りましたので、続けて作業を行えます。\n\n※Googleスプレッドシートへのクラウド同期も行う場合は、「設定・GAS連携」タブでWebアプリURLをご登録ください。');
+        // URL未設定時はオフライン・ローカル保存モードとして処理を完了
+        handleSuccessFinish(false, '※GASのURLが未設定のため、アプリ内（ローカル）保存として完了しました。');
       }
     }
 
-    // Incremental AND Search + Enter Unregistered Check
     function setupSearchEvents() {
       const searchInput = document.getElementById('searchInput');
       const suggestBox = document.getElementById('suggestBox');
@@ -1625,7 +1602,6 @@
       }
     }
 
-    // Global Hotkeys
     function setupGlobalHotkeys() {
       window.addEventListener('keydown', (e) => {
         if (e.key === 'Escape' && isUnregisteredAlertOpen) {
@@ -1689,7 +1665,6 @@
       }
     }
 
-    // Fetch Full Spreadsheet Productivity Data (Cloud Primary + LocalStorage Offline Fallback)
     function fetchProductivityFromGas(showMsg) {
       const effectiveUrl = getEffectiveGasUrl();
       const refreshIcon = document.getElementById('prodRefreshIcon');
@@ -1714,7 +1689,6 @@
         if (data && data.success) {
           cloudHistoryData = Array.isArray(data.records) ? data.records : [];
           cloudWorkTimesData = Array.isArray(data.workTimes) ? data.workTimes : [];
-          // Cache locally for offline resilience
           localStorage.setItem(STORAGE_KEY.HISTORY, JSON.stringify(cloudHistoryData));
           localStorage.setItem(STORAGE_KEY.WORK_TIMES, JSON.stringify(cloudWorkTimesData));
           prodDataSource = 'cloud';
@@ -1754,7 +1728,6 @@
       }
     }
 
-    // Tab Switching
     function switchTab(tab) {
       document.getElementById('tab-workstation').classList.add('hidden');
       document.getElementById('tab-productivity').classList.add('hidden');
@@ -1780,7 +1753,6 @@
       }
     }
 
-    // Productivity Unlock & Calculations
     function unlockProductivity() {
       const pin = document.getElementById('prodPinInput').value.trim();
       if (pin === '0120') {
@@ -1812,7 +1784,6 @@
       if (!isProdUnlocked) return;
       const { history, workTimes } = getActiveProductivityData();
 
-      // Update Cloud / Local Source Status Badge & Error Banner
       const badgeEl = document.getElementById('prodDataSourceBadge');
       const syncTextEl = document.getElementById('prodLastSyncText');
       const errBanner = document.getElementById('prodCloudErrorBanner');
@@ -1852,14 +1823,9 @@
       document.getElementById('kpiSecPerItem').textContent = `${secPerItem} 秒`;
       document.getElementById('kpiItemsPerHour').textContent = `${itemsPerHour} 個/h`;
 
-      // Render Monthly Overview Tiles
       renderMonthlyTiles(history, workTimes);
-
-      // Render Charts & Worker ranking table
       renderWorkerRanking(history, workTimes);
       renderCharts(history, workTimes);
-
-      // Render Product, Color, Size Breakdowns
       renderBreakdowns(history);
     }
 
@@ -1931,8 +1897,6 @@
       }
 
       const totalQty = history.reduce((sum, h) => sum + (h.quantity || 0), 0) || 1;
-
-      // Product breakdown
       const prodMap = {};
       const colorMap = {};
       const sizeMap = {};
@@ -1963,7 +1927,6 @@
         `;
       }).join('');
 
-      // Colors
       const colors = Object.keys(colorMap).sort((a, b) => colorMap[b] - colorMap[a]);
       colorContainer.innerHTML = colors.map(c => {
         const qty = colorMap[c];
@@ -1981,7 +1944,6 @@
         `;
       }).join('');
 
-      // Sizes
       const sizes = Object.keys(sizeMap).sort((a, b) => sizeMap[b] - sizeMap[a]);
       sizeContainer.innerHTML = sizes.map(s => {
         const qty = sizeMap[s];
@@ -2047,7 +2009,6 @@
         return;
       }
 
-      // Group by date/week
       const dateMap = {};
       history.forEach(h => {
         dateMap[h.date] = (dateMap[h.date] || 0) + h.quantity;
