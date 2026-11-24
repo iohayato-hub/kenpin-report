@@ -252,8 +252,8 @@
       <div id="prodDashboardContent" class="hidden space-y-6">
         <div class="bg-white rounded-2xl p-4 border shadow-xs flex flex-wrap items-center justify-between gap-4 no-print">
           <div>
-            <h2 class="text-lg font-black text-slate-900">全スタッフ集計・生産性ダッシュボード (月別・週別グラフ / データ編集)</h2>
-            <p id="dashScopeDescription" class="text-xs text-slate-500 mt-0.5">スプレッドシートに集約された全スタッフの検品実績・作業時間を集計・分析</p>
+            <h2 class="text-lg font-black text-slate-900">全スタッフ集計・生産性ダッシュボード (月別・週別グラフ・一覧 / 編集)</h2>
+            <p id="dashScopeDescription" class="text-xs text-slate-500 mt-0.5">スプレッドシートに集約された全スタッフの検品実績（検品日基準）・作業時間を集計・分析</p>
           </div>
           <div class="flex items-center gap-2">
             <button onclick="loadProductivityData()" class="px-4 py-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold text-xs rounded-xl border border-indigo-200 flex items-center gap-1.5">
@@ -265,13 +265,35 @@
           </div>
         </div>
 
+        <!-- 絞り込みフィルター（作業者・検品日期間） -->
+        <div class="bg-white rounded-2xl p-4 border shadow-xs flex flex-wrap items-end gap-4 no-print">
+          <div class="space-y-1">
+            <label class="block text-[11px] font-bold text-slate-600">作業者フィルター</label>
+            <select id="filterWorkerSelect" onchange="applyDashboardFilters()" class="px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-800">
+              <option value="">全スタッフ</option>
+            </select>
+          </div>
+          <div class="space-y-1">
+            <label class="block text-[11px] font-bold text-slate-600">検品日 開始</label>
+            <input type="date" id="filterStartDate" onchange="applyDashboardFilters()" class="px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-800">
+          </div>
+          <div class="space-y-1">
+            <label class="block text-[11px] font-bold text-slate-600">検品日 終了</label>
+            <input type="date" id="filterEndDate" onchange="applyDashboardFilters()" class="px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-800">
+          </div>
+          <button type="button" onclick="resetDashboardFilters()" class="px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl">
+            フィルタークリア
+          </button>
+        </div>
+
+        <!-- KPIカード -->
         <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 print-card">
           <div class="bg-white p-5 rounded-2xl border shadow-xs">
-            <div class="text-xs font-bold text-slate-500">総検品数量（全スタッフ合算）</div>
+            <div class="text-xs font-bold text-slate-500">合計検品数量（検品日基準・全スタッフ）</div>
             <div id="dashTotalQty" class="text-2xl font-black text-indigo-700 mt-1">0 個</div>
           </div>
           <div class="bg-white p-5 rounded-2xl border shadow-xs">
-            <div class="text-xs font-bold text-slate-500">総作業時間（全スタッフ合算）</div>
+            <div class="text-xs font-bold text-slate-500">合計作業時間</div>
             <div id="dashTotalMinutes" class="text-2xl font-black text-slate-900 mt-1">0 分</div>
           </div>
           <div class="bg-white p-5 rounded-2xl border shadow-xs">
@@ -280,11 +302,11 @@
           </div>
         </div>
 
-        <!-- グラフ分析セクション：月別・週別検品数量＆作業者別生産性 -->
+        <!-- グラフ分析セクション：月別・週別検品数量（検品日基準・全スタッフ合計） -->
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <div class="bg-white rounded-2xl p-6 border shadow-xs space-y-3 print-card">
             <div class="flex items-center justify-between">
-              <h3 class="text-sm font-black text-slate-900">📈 月別 検品数量推移（全スタッフ合算）</h3>
+              <h3 class="text-sm font-black text-slate-900">📈 月別 合計検品数量グラフ（検品日基準）</h3>
               <span id="monthlyChartSummary" class="text-xs font-bold text-indigo-700">-</span>
             </div>
             <div class="h-64 relative">
@@ -294,7 +316,7 @@
 
           <div class="bg-white rounded-2xl p-6 border shadow-xs space-y-3 print-card">
             <div class="flex items-center justify-between">
-              <h3 class="text-sm font-black text-slate-900">📊 週別 検品数量推移（月曜始まり / 全スタッフ合算）</h3>
+              <h3 class="text-sm font-black text-slate-900">📊 週別 合計検品数量グラフ（検品日基準・月曜始まり）</h3>
               <span id="weeklyChartSummary" class="text-xs font-bold text-emerald-700">-</span>
             </div>
             <div class="h-64 relative">
@@ -303,6 +325,52 @@
           </div>
         </div>
 
+        <!-- 月別・週別 合計検品数量一覧テーブル -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div class="bg-white rounded-2xl p-6 border shadow-xs space-y-3 print-card">
+            <div class="flex items-center justify-between">
+              <h3 class="text-sm font-black text-slate-900">🗓️ 月別 合計検品数量一覧（検品日基準）</h3>
+              <span class="text-xs text-slate-400">全スタッフ合計</span>
+            </div>
+            <div class="overflow-x-auto max-h-64 overflow-y-auto">
+              <table class="w-full text-left text-xs">
+                <thead class="bg-slate-50 text-slate-500 border-b sticky top-0">
+                  <tr>
+                    <th class="p-2.5 font-bold">対象月</th>
+                    <th class="p-2.5 font-bold">実績行数</th>
+                    <th class="p-2.5 font-bold text-right">合計検品数量</th>
+                  </tr>
+                </thead>
+                <tbody id="monthlySummaryTableBody" class="divide-y divide-slate-100">
+                  <tr><td colspan="3" class="p-4 text-center text-slate-400 font-bold">データなし</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <div class="bg-white rounded-2xl p-6 border shadow-xs space-y-3 print-card">
+            <div class="flex items-center justify-between">
+              <h3 class="text-sm font-black text-slate-900">📅 週別 合計検品数量一覧（検品日基準・月曜始まり）</h3>
+              <span class="text-xs text-slate-400">全スタッフ合計</span>
+            </div>
+            <div class="overflow-x-auto max-h-64 overflow-y-auto">
+              <table class="w-full text-left text-xs">
+                <thead class="bg-slate-50 text-slate-500 border-b sticky top-0">
+                  <tr>
+                    <th class="p-2.5 font-bold">週初日（月曜）</th>
+                    <th class="p-2.5 font-bold">実績行数</th>
+                    <th class="p-2.5 font-bold text-right">合計検品数量</th>
+                  </tr>
+                </thead>
+                <tbody id="weeklySummaryTableBody" class="divide-y divide-slate-100">
+                  <tr><td colspan="3" class="p-4 text-center text-slate-400 font-bold">データなし</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- 作業者別 検品数量 & 生産性グラフ -->
         <div class="bg-white rounded-2xl p-6 border shadow-xs space-y-3 print-card">
           <div class="flex items-center justify-between">
             <h3 class="text-sm font-black text-slate-900">⚡ 作業者別 検品数量 & 生産性（個/h）比較</h3>
@@ -316,14 +384,14 @@
         <!-- 送信済み実績の編集・管理テーブル -->
         <div class="bg-white rounded-2xl p-6 border shadow-xs space-y-4 print-card">
           <div class="flex items-center justify-between">
-            <h3 class="text-sm font-black text-slate-900">📋 送信済み検品実績一覧（全スタッフ / 修正・削除可能）</h3>
+            <h3 class="text-sm font-black text-slate-900">📋 送信済み検品実績一覧（修正・削除可能）</h3>
             <span class="text-xs text-slate-400">行の「編集」から数量や商品名を変更</span>
           </div>
           <div class="overflow-x-auto max-h-[350px] overflow-y-auto">
             <table class="w-full text-left text-xs">
               <thead class="bg-slate-50 text-slate-500 border-b sticky top-0">
                 <tr>
-                  <th class="p-3 font-bold">日付</th>
+                  <th class="p-3 font-bold">検品日</th>
                   <th class="p-3 font-bold">作業者</th>
                   <th class="p-3 font-bold">商品コード</th>
                   <th class="p-3 font-bold">品名 / 仕様</th>
@@ -535,7 +603,10 @@
 
     let masterItems = DEFAULT_MASTER;
     let draftRecords = [];
-    let cachedRecords = [];
+    let allRecords = [];
+    let allWorkTimes = [];
+    let filteredRecords = [];
+    let filteredWorkTimes = [];
     let todaySubmittedHistory = [];
     let activeScannedItem = null;
     let isAwaitingQuantity = false;
@@ -566,6 +637,14 @@
       return '';
     }
 
+    function normalizeCode(val) {
+      return String(val || '').trim().toUpperCase();
+    }
+
+    function normalizeJan(val) {
+      return String(val || '').trim();
+    }
+
     window.addEventListener('DOMContentLoaded', () => {
       loadStorage();
       setupSearchEvents();
@@ -592,7 +671,7 @@
       }
 
       document.getElementById('headerMasterCount').textContent = `マスタ: ${masterItems.length}件`;
-      
+
       try {
         const d = localStorage.getItem('gas_insp_drafts');
         draftRecords = d ? JSON.parse(d) : [];
@@ -610,7 +689,6 @@
       loadAndPruneTodayHistory();
     }
 
-    // 当日（JST）履歴のみ保持し、過去日データは自動破棄してデータ肥大化を防止
     function loadAndPruneTodayHistory() {
       const today = getJstDateString();
       try {
@@ -768,7 +846,10 @@
           .getMaster();
       } else if (effectiveUrl) {
         fetch(effectiveUrl + '?action=getMaster')
-          .then(res => res.json())
+          .then(res => {
+            if (!res.ok) throw new Error('HTTP ' + res.status);
+            return res.json();
+          })
           .then(data => {
             if (data && data.success && Array.isArray(data.items) && data.items.length > 0) {
               masterItems = data.items;
@@ -807,14 +888,21 @@
       return `${(parts.find(p=>p.type==='year')||{}).value}-${(parts.find(p=>p.type==='month')||{}).value}-${(parts.find(p=>p.type==='day')||{}).value}`;
     }
 
-    // YYYY-MM-DD 文字列を週初（月曜日）の YYYY-MM-DD へ変換
-    function getMondayDateString(dateStr) {
-      const match = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(dateStr || '').trim());
+    function normalizeDateKey(dateStr) {
+      const s = String(dateStr || '').trim().replace(/\//g, '-');
+      const match = /^(\d{4})-(\d{1,2})-(\d{1,2})/.exec(s);
       if (!match) return null;
-      const year = parseInt(match[1], 10);
-      const month = parseInt(match[2], 10) - 1;
-      const day = parseInt(match[3], 10);
-      const dt = new Date(Date.UTC(year, month, day));
+      const y = match[1];
+      const m = match[2].padStart(2, '0');
+      const d = match[3].padStart(2, '0');
+      return `${y}-${m}-${d}`;
+    }
+
+    function getMondayDateString(dateStr) {
+      const norm = normalizeDateKey(dateStr);
+      if (!norm) return null;
+      const [year, month, day] = norm.split('-').map(n => parseInt(n, 10));
+      const dt = new Date(Date.UTC(year, month - 1, day));
       const utcDay = dt.getUTCDay();
       const diffToMonday = utcDay === 0 ? -6 : 1 - utcDay;
       dt.setUTCDate(dt.getUTCDate() + diffToMonday);
@@ -824,11 +912,10 @@
       return `${y}-${m}-${d}`;
     }
 
-    // YYYY-MM-DD 文字列を YYYY-MM へ変換
     function getYearMonthString(dateStr) {
-      const match = /^(\d{4})-(\d{2})/.exec(String(dateStr || '').trim());
-      if (!match) return null;
-      return `${match[1]}-${match[2]}`;
+      const norm = normalizeDateKey(dateStr);
+      if (!norm) return null;
+      return norm.slice(0, 7);
     }
 
     function updateDraftUI() {
@@ -887,7 +974,6 @@
       document.getElementById('submitStep2').classList.add('hidden');
     }
 
-    // STEP 1 → STEP 2（最終確認画面へ遷移）
     function goToFinalConfirm(includeTime) {
       if (!draftRecords || draftRecords.length === 0) {
         closeSubmitModal();
@@ -896,7 +982,7 @@
 
       pendingIncludeTime = includeTime;
       const worker = document.getElementById('modalWorkerInput').value.trim() || '山田';
-      const selectedDate = document.getElementById('modalInspectionDateInput').value || getJstDateString();
+      const selectedDate = normalizeDateKey(document.getElementById('modalInspectionDateInput').value) || getJstDateString();
       const mins = includeTime ? (parseInt(document.getElementById('workMinutesInput').value, 10) || 0) : 0;
 
       const recordsToSubmit = draftRecords.map(d => ({ ...d, date: selectedDate, worker: worker }));
@@ -1003,7 +1089,7 @@
       const worker = document.getElementById('workerInput').value.trim() || '山田';
       const today = getJstDateString();
 
-      const existingIdx = draftRecords.findIndex(r => String(r.code) === String(activeScannedItem.code));
+      const existingIdx = draftRecords.findIndex(r => normalizeCode(r.code) === normalizeCode(activeScannedItem.code));
       if (existingIdx >= 0) {
         draftRecords[existingIdx].quantity += qty;
         draftRecords[existingIdx].name1 = activeScannedItem.name1;
@@ -1039,7 +1125,7 @@
       const confirmBtn = document.getElementById('btnFinalSubmitConfirm');
       if (confirmBtn) confirmBtn.disabled = true;
 
-      const { worker, selectedDate, recordsToSubmit, workTimeRecord } = pendingSubmissionContext;
+      const { selectedDate, recordsToSubmit, workTimeRecord } = pendingSubmissionContext;
 
       const payload = {
         action: 'submitReport',
@@ -1049,23 +1135,59 @@
 
       const url = getEffectiveGasUrl();
 
-      recordTodaySubmission(recordsToSubmit, workTimeRecord, selectedDate);
-
       if (isGasNativeEnv()) {
         google.script.run
-          .withSuccessHandler(() => { finishSubmitSuccess(recordsToSubmit.length); })
+          .withSuccessHandler(res => {
+            if (res && res.success === false) {
+              isSubmitting = false;
+              if (confirmBtn) confirmBtn.disabled = false;
+              showToast(res.message || '送信に失敗しました（リストは保持されています）');
+              return;
+            }
+            recordTodaySubmission(recordsToSubmit, workTimeRecord, selectedDate);
+            finishSubmitSuccess(recordsToSubmit.length);
+          })
           .withFailureHandler(() => {
             isSubmitting = false;
             if (confirmBtn) confirmBtn.disabled = false;
-            showToast('GAS送信エラーが発生しました');
+            showToast('GAS送信エラーが発生しました（リストは保持されています）');
           })
-          .doPostSimulation(payload);
+          .processPostRequest(payload);
         return;
-      } else if (url) {
-        fetch(url, { method: 'POST', mode: 'no-cors', body: JSON.stringify(payload) }).catch(() => {});
       }
 
-      finishSubmitSuccess(recordsToSubmit.length);
+      if (!url) {
+        isSubmitting = false;
+        if (confirmBtn) confirmBtn.disabled = false;
+        showToast('GAS URLが未設定です。「設定・GAS連携」からURLを設定してください');
+        return;
+      }
+
+      fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify(payload)
+      })
+        .then(res => {
+          if (!res.ok) {
+            throw new Error('HTTP ' + res.status);
+          }
+          return res.text();
+        })
+        .then(text => {
+          let parsed = null;
+          try { parsed = JSON.parse(text); } catch (_) { parsed = null; }
+          if (parsed && parsed.success === false) {
+            throw new Error(parsed.message || 'Server error');
+          }
+          recordTodaySubmission(recordsToSubmit, workTimeRecord, selectedDate);
+          finishSubmitSuccess(recordsToSubmit.length);
+        })
+        .catch(() => {
+          isSubmitting = false;
+          if (confirmBtn) confirmBtn.disabled = false;
+          showToast('送信に失敗しました。通信やGAS公開設定を確認してください（リストは保持されます）');
+        });
     }
 
     function finishSubmitSuccess(count) {
@@ -1078,7 +1200,9 @@
 
     function closeLargeSuccessBanner() {
       document.getElementById('largeSuccessBanner').classList.add('hidden');
-      loadProductivityData();
+      if (isProdUnlocked) {
+        loadProductivityData();
+      }
     }
 
     function setupSearchEvents() {
@@ -1093,7 +1217,7 @@
             const combined = `${item.code} ${item.name1} ${item.name2} ${item.size} ${item.jan}`.toLowerCase();
             return val.split(/\s+/).every(t => combined.includes(t));
           }).slice(0, 15);
-          
+
           if (filtered.length > 0) {
             suggestBox.innerHTML = `
               <div class="px-3 py-1.5 bg-slate-50 text-[11px] text-slate-500 font-bold sticky top-0 border-b flex justify-between">
@@ -1135,7 +1259,7 @@
     }
 
     function selectSearchItem(code) {
-      const item = masterItems.find(m => String(m.code) === String(code));
+      const item = masterItems.find(m => normalizeCode(m.code) === normalizeCode(code));
       if (item) {
         document.getElementById('searchInput').value = '';
         document.getElementById('suggestBox').classList.add('hidden');
@@ -1221,9 +1345,15 @@
       lastScannedCode = cleanCode;
       lastScannedAt = now;
 
+      const normCode = normalizeCode(cleanCode);
+      const normJan = normalizeJan(cleanCode);
+
       const hasMaster = Array.isArray(masterItems) && masterItems.length > 0;
       const found = hasMaster
-        ? masterItems.find(m => String(m.code) === cleanCode || String(m.jan) === cleanCode)
+        ? masterItems.find(m =>
+            (m.jan && normalizeJan(m.jan) === normJan) ||
+            (m.code && normalizeCode(m.code) === normCode)
+          )
         : null;
 
       if (found) {
@@ -1233,13 +1363,13 @@
       }
     }
 
-    // スプレッドシート全体（全スタッフ送信データ）を取得して集計・グラフ描画
+    // スプレッドシート全体（全スタッフ送信データ）を取得して集計・グラフ・一覧描画
     function loadProductivityData() {
       const effectiveUrl = getEffectiveGasUrl();
       if (isGasNativeEnv()) {
         google.script.run
           .withSuccessHandler(res => {
-            renderProductivityDashboard(res);
+            ingestProductivityData(res);
           })
           .withFailureHandler(() => {
             showToast('スプレッドシートデータの取得に失敗しました');
@@ -1247,9 +1377,12 @@
           .getProductivityData();
       } else if (effectiveUrl) {
         fetch(effectiveUrl + '?action=getProductivity')
-          .then(res => res.json())
+          .then(res => {
+            if (!res.ok) throw new Error('HTTP ' + res.status);
+            return res.json();
+          })
           .then(data => {
-            renderProductivityDashboard(data);
+            ingestProductivityData(data);
           }).catch(() => {
             showToast('スプレッドシートデータの取得に失敗しました');
           });
@@ -1258,57 +1391,156 @@
       }
     }
 
-    function renderProductivityDashboard(data) {
+    function ingestProductivityData(data) {
       if (!data || !data.success) {
         showToast('スプレッドシートデータの取得に失敗しました');
         return;
       }
 
-      cachedRecords = data.records || [];
-      const workTimes = data.workTimes || [];
+      allRecords = (data.records || []).map(r => ({
+        ...r,
+        date: normalizeDateKey(r.date) || String(r.date || '').trim(),
+        worker: String(r.worker || '').trim() || '未設定',
+        quantity: Number(r.quantity) || 0
+      }));
 
+      allWorkTimes = (data.workTimes || []).map(w => ({
+        ...w,
+        date: normalizeDateKey(w.date) || String(w.date || '').trim(),
+        worker: String(w.worker || '').trim() || '未設定',
+        minutes: Number(w.minutes) || 0
+      }));
+
+      populateWorkerFilterOptions();
+      applyDashboardFilters();
+    }
+
+    function populateWorkerFilterOptions() {
+      const select = document.getElementById('filterWorkerSelect');
+      if (!select) return;
+      const prevVal = select.value;
+      const workers = Array.from(new Set([
+        ...allRecords.map(r => r.worker),
+        ...allWorkTimes.map(w => w.worker)
+      ])).filter(Boolean).sort();
+
+      select.innerHTML = '<option value="">全スタッフ</option>' + workers.map(w =>
+        `<option value="${escapeHtml(w)}">${escapeHtml(w)}</option>`
+      ).join('');
+
+      if (workers.includes(prevVal)) {
+        select.value = prevVal;
+      } else {
+        select.value = '';
+      }
+    }
+
+    function resetDashboardFilters() {
+      document.getElementById('filterWorkerSelect').value = '';
+      document.getElementById('filterStartDate').value = '';
+      document.getElementById('filterEndDate').value = '';
+      applyDashboardFilters();
+    }
+
+    function applyDashboardFilters() {
+      const selectedWorker = (document.getElementById('filterWorkerSelect')?.value || '').trim();
+      const startDate = normalizeDateKey(document.getElementById('filterStartDate')?.value || '');
+      const endDate = normalizeDateKey(document.getElementById('filterEndDate')?.value || '');
+
+      const matchRow = (row) => {
+        if (selectedWorker && row.worker !== selectedWorker) return false;
+        const dKey = normalizeDateKey(row.date);
+        if (startDate && (!dKey || dKey < startDate)) return false;
+        if (endDate && (!dKey || dKey > endDate)) return false;
+        return true;
+      };
+
+      filteredRecords = allRecords.filter(matchRow);
+      filteredWorkTimes = allWorkTimes.filter(matchRow);
+
+      renderProductivityDashboard(filteredRecords, filteredWorkTimes, selectedWorker, startDate, endDate);
+    }
+
+    function buildMonthlySummary(records) {
+      const map = {};
+      records.forEach(r => {
+        const ym = getYearMonthString(r.date);
+        if (!ym) return;
+        if (!map[ym]) {
+          map[ym] = { month: ym, count: 0, qty: 0 };
+        }
+        map[ym].count += 1;
+        map[ym].qty += Number(r.quantity) || 0;
+      });
+      return Object.keys(map).sort().map(k => map[k]);
+    }
+
+    function buildWeeklySummary(records) {
+      const map = {};
+      records.forEach(r => {
+        const monday = getMondayDateString(r.date);
+        if (!monday) return;
+        if (!map[monday]) {
+          map[monday] = { weekStart: monday, count: 0, qty: 0 };
+        }
+        map[monday].count += 1;
+        map[monday].qty += Number(r.quantity) || 0;
+      });
+      return Object.keys(map).sort().map(k => map[k]);
+    }
+
+    function renderProductivityDashboard(records, workTimes, selectedWorker, startDate, endDate) {
       const uniqueWorkers = new Set([
-        ...cachedRecords.map(r => r.worker || '未設定'),
+        ...records.map(r => r.worker || '未設定'),
         ...workTimes.map(w => w.worker || '未設定')
       ]);
 
+      const filterLabel = [
+        selectedWorker ? `担当: ${selectedWorker}` : '全スタッフ',
+        (startDate || endDate) ? `検品日: ${startDate || '指定なし'} 〜 ${endDate || '指定なし'}` : '全期間'
+      ].join(' / ');
+
       const scopeDescEl = document.getElementById('dashScopeDescription');
       if (scopeDescEl) {
-        scopeDescEl.textContent = `全スタッフ集計対象: ${uniqueWorkers.size}名 / 実績 ${cachedRecords.length}件（スプレッドシート集約データ）`;
+        scopeDescEl.textContent = `${filterLabel}（集計対象 ${uniqueWorkers.size}名 / 実績 ${records.length}件・検品日基準）`;
       }
 
-      let totalQty = cachedRecords.reduce((sum, r) => sum + (Number(r.quantity) || 0), 0);
-      let totalMins = workTimes.reduce((sum, w) => sum + (Number(w.minutes) || 0), 0);
-      let totalHours = totalMins / 60;
-      let avgProd = totalHours > 0 ? (totalQty / totalHours).toFixed(1) : '0.0';
+      const totalQty = records.reduce((sum, r) => sum + (Number(r.quantity) || 0), 0);
+      const totalMins = workTimes.reduce((sum, w) => sum + (Number(w.minutes) || 0), 0);
+      const totalHours = totalMins / 60;
+      const avgProd = totalHours > 0 ? (totalQty / totalHours).toFixed(1) : '0.0';
 
       document.getElementById('dashTotalQty').textContent = `${totalQty.toLocaleString()} 個`;
-      document.getElementById('dashTotalMinutes').textContent = `${totalMins.toLocaleString()} 分 (${(totalHours).toFixed(1)}h)`;
+      document.getElementById('dashTotalMinutes').textContent = `${totalMins.toLocaleString()} 分 (${totalHours.toFixed(1)}h)`;
       document.getElementById('dashAvgProductivity').textContent = `${avgProd} 個/h`;
 
-      renderProductivityCharts(cachedRecords, workTimes);
+      const monthlyList = buildMonthlySummary(records);
+      const weeklyList = buildWeeklySummary(records);
+
+      renderMonthlyWeeklyTables(monthlyList, weeklyList);
+      renderProductivityCharts(monthlyList, weeklyList, records, workTimes);
 
       const tbodyRecords = document.getElementById('dashRecordsTableBody');
-      if (cachedRecords.length === 0) {
+      if (records.length === 0) {
         tbodyRecords.innerHTML = '<tr><td colspan="7" class="p-6 text-center text-slate-400 font-bold">検品実績データがありません</td></tr>';
       } else {
-        tbodyRecords.innerHTML = cachedRecords.map((r, idx) => `
+        tbodyRecords.innerHTML = records.map(r => `
           <tr class="hover:bg-slate-50">
-            <td class="p-3 text-slate-600">${escapeHtml(r.date)}</td>
+            <td class="p-3 text-slate-600 font-mono">${escapeHtml(r.date)}</td>
             <td class="p-3 font-bold text-slate-900">${escapeHtml(r.worker)}</td>
             <td class="p-3 font-mono text-indigo-700">${escapeHtml(r.code)}</td>
             <td class="p-3 font-semibold">${escapeHtml(r.name1)} (${escapeHtml(r.name2)})</td>
             <td class="p-3">${escapeHtml(r.size)}</td>
             <td class="p-3 font-black text-slate-900">${Number(r.quantity || 0).toLocaleString()} 個</td>
             <td class="p-3 text-right no-print">
-              <button onclick="openEditModal(${idx})" class="px-2.5 py-1 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold rounded-lg text-xs">編集</button>
+              <button onclick="openEditModalByRecord('${escapeHtml(String(r.id || ''))}', ${Number(r.rowNumber || r.row || 0)})" class="px-2.5 py-1 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold rounded-lg text-xs">編集</button>
             </td>
           </tr>
         `).join('');
       }
 
       const workerMap = {};
-      cachedRecords.forEach(r => {
+      records.forEach(r => {
         const w = r.worker || '未設定';
         if (!workerMap[w]) workerMap[w] = { kinds: new Set(), qty: 0 };
         workerMap[w].kinds.add(r.code);
@@ -1344,7 +1576,7 @@
       `).join('');
 
       const itemMap = {};
-      cachedRecords.forEach(r => {
+      records.forEach(r => {
         const key = r.code;
         if (!itemMap[key]) {
           itemMap[key] = { code: r.code, name1: r.name1 || '', name2: r.name2 || '', size: r.size || '', qty: 0 };
@@ -1366,43 +1598,58 @@
       `).join('');
     }
 
-    function renderProductivityCharts(records, workTimes) {
+    function renderMonthlyWeeklyTables(monthlyList, weeklyList) {
+      const mBody = document.getElementById('monthlySummaryTableBody');
+      if (mBody) {
+        if (monthlyList.length === 0) {
+          mBody.innerHTML = '<tr><td colspan="3" class="p-4 text-center text-slate-400 font-bold">データなし</td></tr>';
+        } else {
+          mBody.innerHTML = monthlyList.slice().reverse().map(m => `
+            <tr class="hover:bg-slate-50">
+              <td class="p-2.5 font-mono font-bold text-slate-800">${escapeHtml(m.month)}月</td>
+              <td class="p-2.5 text-slate-600">${Number(m.count).toLocaleString()} 行</td>
+              <td class="p-2.5 font-black text-indigo-700 text-right">${Number(m.qty).toLocaleString()} 個</td>
+            </tr>
+          `).join('');
+        }
+      }
+
+      const wBody = document.getElementById('weeklySummaryTableBody');
+      if (wBody) {
+        if (weeklyList.length === 0) {
+          wBody.innerHTML = '<tr><td colspan="3" class="p-4 text-center text-slate-400 font-bold">データなし</td></tr>';
+        } else {
+          wBody.innerHTML = weeklyList.slice().reverse().map(w => `
+            <tr class="hover:bg-slate-50">
+              <td class="p-2.5 font-mono font-bold text-slate-800">${escapeHtml(w.weekStart)}週〜</td>
+              <td class="p-2.5 text-slate-600">${Number(w.count).toLocaleString()} 行</td>
+              <td class="p-2.5 font-black text-emerald-700 text-right">${Number(w.qty).toLocaleString()} 個</td>
+            </tr>
+          `).join('');
+        }
+      }
+    }
+
+    function renderProductivityCharts(monthlyList, weeklyList, records, workTimes) {
       if (typeof Chart === 'undefined') return;
 
-      const monthMap = {};
-      const weekMap = {};
+      const monthLabels = monthlyList.map(m => `${m.month}月`);
+      const monthValues = monthlyList.map(m => m.qty);
 
-      records.forEach(r => {
-        const qty = Number(r.quantity) || 0;
-        const ym = getYearMonthString(r.date);
-        const monday = getMondayDateString(r.date);
-        if (ym) {
-          monthMap[ym] = (monthMap[ym] || 0) + qty;
-        }
-        if (monday) {
-          weekMap[monday] = (weekMap[monday] || 0) + qty;
-        }
-      });
-
-      const monthKeys = Object.keys(monthMap).sort();
-      const monthLabels = monthKeys.map(k => `${k}月`);
-      const monthValues = monthKeys.map(k => monthMap[k]);
-
-      const weekKeys = Object.keys(weekMap).sort();
-      const weekLabels = weekKeys.map(k => `${k}週〜`);
-      const weekValues = weekKeys.map(k => weekMap[k]);
+      const weekLabels = weeklyList.map(w => `${w.weekStart}週〜`);
+      const weekValues = weeklyList.map(w => w.qty);
 
       const monthlySummaryEl = document.getElementById('monthlyChartSummary');
       if (monthlySummaryEl) {
-        monthlySummaryEl.textContent = monthKeys.length > 0
-          ? `対象 ${monthKeys.length}ヶ月 / 最新: ${monthValues[monthValues.length - 1].toLocaleString()}個`
+        monthlySummaryEl.textContent = monthlyList.length > 0
+          ? `対象 ${monthlyList.length}ヶ月 / 最新: ${monthValues[monthValues.length - 1].toLocaleString()}個`
           : 'データなし';
       }
 
       const weeklySummaryEl = document.getElementById('weeklyChartSummary');
       if (weeklySummaryEl) {
-        weeklySummaryEl.textContent = weekKeys.length > 0
-          ? `対象 ${weekKeys.length}週 / 最新週: ${weekValues[weekValues.length - 1].toLocaleString()}個`
+        weeklySummaryEl.textContent = weeklyList.length > 0
+          ? `対象 ${weeklyList.length}週 / 最新週: ${weekValues[weekValues.length - 1].toLocaleString()}個`
           : 'データなし';
       }
 
@@ -1416,7 +1663,7 @@
           data: {
             labels: monthLabels,
             datasets: [{
-              label: '月別検品数量 (個)',
+              label: '月別合計検品数量 (個)',
               data: monthValues,
               backgroundColor: 'rgba(79, 70, 229, 0.78)',
               borderColor: 'rgb(67, 56, 202)',
@@ -1445,7 +1692,7 @@
           data: {
             labels: weekLabels,
             datasets: [{
-              label: '週別検品数量 (個)',
+              label: '週別合計検品数量 (個)',
               data: weekValues,
               borderColor: 'rgb(5, 150, 105)',
               backgroundColor: 'rgba(16, 185, 129, 0.16)',
@@ -1537,10 +1784,13 @@
       }
     }
 
-    function openEditModal(index) {
-      const record = cachedRecords[index];
+    function openEditModalByRecord(recordId, rowNum) {
+      const record = allRecords.find(r =>
+        (recordId && String(r.id || '') === recordId) ||
+        (rowNum && Number(r.rowNumber || r.row || 0) === rowNum)
+      );
       if (!record) return;
-      const resolvedRow = record.rowNumber || record.row || (index + 2);
+      const resolvedRow = Number(record.rowNumber || record.row || rowNum || 0);
       document.getElementById('editRowIndex').value = resolvedRow;
       document.getElementById('editRecordId').value = record.id || '';
       document.getElementById('editOriginalCode').value = record.code || '';
@@ -1605,7 +1855,11 @@
       const url = getEffectiveGasUrl();
       if (isGasNativeEnv()) {
         google.script.run
-          .withSuccessHandler(() => {
+          .withSuccessHandler(res => {
+            if (res && res.success === false) {
+              showToast(res.message || '処理に失敗しました');
+              return;
+            }
             closeEditModal();
             showToast(successMsg);
             loadProductivityData();
@@ -1613,13 +1867,26 @@
           .withFailureHandler(() => {
             showToast('処理に失敗しました');
           })
-          .doPostSimulation(payload);
+          .processPostRequest(payload);
       } else if (url) {
-        fetch(url, { method: 'POST', mode: 'no-cors', body: JSON.stringify(payload) })
-          .then(() => {
+        fetch(url, {
+          method: 'POST',
+          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+          body: JSON.stringify(payload)
+        })
+          .then(res => {
+            if (!res.ok) throw new Error('HTTP ' + res.status);
+            return res.text();
+          })
+          .then(text => {
+            let parsed = null;
+            try { parsed = JSON.parse(text); } catch (_) { parsed = null; }
+            if (parsed && parsed.success === false) {
+              throw new Error(parsed.message || 'Server error');
+            }
             closeEditModal();
             showToast(successMsg);
-            setTimeout(loadProductivityData, 1000);
+            setTimeout(loadProductivityData, 600);
           }).catch(() => {
             showToast('処理に失敗しました');
           });
@@ -1632,7 +1899,7 @@
       document.getElementById('tab-workstation').classList.add('hidden');
       document.getElementById('tab-productivity').classList.add('hidden');
       document.getElementById('tab-settings').classList.add('hidden');
-      
+
       document.getElementById('nav-workstation').className = "px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 text-slate-600 hover:text-slate-900";
       document.getElementById('nav-productivity').className = "px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 text-slate-600 hover:text-slate-900";
       document.getElementById('nav-settings').className = "px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 text-slate-600 hover:text-slate-900";
