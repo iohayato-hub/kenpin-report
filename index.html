@@ -6,6 +6,7 @@
   <title>検品報告・生産性管理システム | PC専用ワークステーション</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
   <style>
     @media print {
       body { background: white !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
@@ -46,7 +47,7 @@
             <span>·</span>
             <span class="text-slate-700 font-bold">担当: <span id="headerWorkerName">山田</span></span>
             <span class="hidden sm:inline">·</span>
-            <span id="headerGasStatus" class="hidden sm:inline text-slate-500 text-[11px]">GAS版</span>
+            <span id="headerGasStatus" class="hidden sm:inline text-slate-500 text-[11px]">GAS連携</span>
           </p>
         </div>
       </div>
@@ -68,7 +69,7 @@
     </div>
   </header>
 
-  <!-- 大型送信完了オーバーレイ通知（作業者に分かりやすく明示） -->
+  <!-- 大型送信完了オーバーレイ通知 -->
   <div id="largeSuccessBanner" class="hidden fixed inset-0 z-50 bg-slate-900/70 backdrop-blur-xs flex items-center justify-center p-4">
     <div class="bg-white rounded-3xl p-8 max-w-lg w-full shadow-2xl text-center space-y-6 border-4 border-emerald-500 animate-bounce-short">
       <div class="w-20 h-20 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto text-4xl font-black">
@@ -251,12 +252,12 @@
       <div id="prodDashboardContent" class="hidden space-y-6">
         <div class="bg-white rounded-2xl p-4 border shadow-xs flex flex-wrap items-center justify-between gap-4 no-print">
           <div>
-            <h2 class="text-lg font-black text-slate-900">作業者別生産性・集計ダッシュボード (データ編集対応)</h2>
-            <p class="text-xs text-slate-500 mt-0.5">送信済み実績の修正・削除および集計レポート確認</p>
+            <h2 class="text-lg font-black text-slate-900">全スタッフ集計・生産性ダッシュボード (月別・週別グラフ / データ編集)</h2>
+            <p id="dashScopeDescription" class="text-xs text-slate-500 mt-0.5">スプレッドシートに集約された全スタッフの検品実績・作業時間を集計・分析</p>
           </div>
           <div class="flex items-center gap-2">
             <button onclick="loadProductivityData()" class="px-4 py-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold text-xs rounded-xl border border-indigo-200 flex items-center gap-1.5">
-              <span>🔄 データを更新</span>
+              <span>🔄 全員データを更新</span>
             </button>
             <button onclick="window.print()" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs rounded-xl shadow-sm flex items-center gap-1.5">
               <span>印刷 / PDF保存</span>
@@ -266,11 +267,11 @@
 
         <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 print-card">
           <div class="bg-white p-5 rounded-2xl border shadow-xs">
-            <div class="text-xs font-bold text-slate-500">総検品数量</div>
+            <div class="text-xs font-bold text-slate-500">総検品数量（全スタッフ合算）</div>
             <div id="dashTotalQty" class="text-2xl font-black text-indigo-700 mt-1">0 個</div>
           </div>
           <div class="bg-white p-5 rounded-2xl border shadow-xs">
-            <div class="text-xs font-bold text-slate-500">総作業時間</div>
+            <div class="text-xs font-bold text-slate-500">総作業時間（全スタッフ合算）</div>
             <div id="dashTotalMinutes" class="text-2xl font-black text-slate-900 mt-1">0 分</div>
           </div>
           <div class="bg-white p-5 rounded-2xl border shadow-xs">
@@ -279,10 +280,43 @@
           </div>
         </div>
 
+        <!-- グラフ分析セクション：月別・週別検品数量＆作業者別生産性 -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div class="bg-white rounded-2xl p-6 border shadow-xs space-y-3 print-card">
+            <div class="flex items-center justify-between">
+              <h3 class="text-sm font-black text-slate-900">📈 月別 検品数量推移（全スタッフ合算）</h3>
+              <span id="monthlyChartSummary" class="text-xs font-bold text-indigo-700">-</span>
+            </div>
+            <div class="h-64 relative">
+              <canvas id="monthlyQtyChart"></canvas>
+            </div>
+          </div>
+
+          <div class="bg-white rounded-2xl p-6 border shadow-xs space-y-3 print-card">
+            <div class="flex items-center justify-between">
+              <h3 class="text-sm font-black text-slate-900">📊 週別 検品数量推移（月曜始まり / 全スタッフ合算）</h3>
+              <span id="weeklyChartSummary" class="text-xs font-bold text-emerald-700">-</span>
+            </div>
+            <div class="h-64 relative">
+              <canvas id="weeklyQtyChart"></canvas>
+            </div>
+          </div>
+        </div>
+
+        <div class="bg-white rounded-2xl p-6 border shadow-xs space-y-3 print-card">
+          <div class="flex items-center justify-between">
+            <h3 class="text-sm font-black text-slate-900">⚡ 作業者別 検品数量 & 生産性（個/h）比較</h3>
+            <span class="text-xs text-slate-400">棒グラフ：検品数量 / 折れ線：時間あたり生産性</span>
+          </div>
+          <div class="h-64 relative">
+            <canvas id="workerProdChart"></canvas>
+          </div>
+        </div>
+
         <!-- 送信済み実績の編集・管理テーブル -->
         <div class="bg-white rounded-2xl p-6 border shadow-xs space-y-4 print-card">
           <div class="flex items-center justify-between">
-            <h3 class="text-sm font-black text-slate-900">📋 送信済み検品実績一覧（修正・削除可能）</h3>
+            <h3 class="text-sm font-black text-slate-900">📋 送信済み検品実績一覧（全スタッフ / 修正・削除可能）</h3>
             <span class="text-xs text-slate-400">行の「編集」から数量や商品名を変更</span>
           </div>
           <div class="overflow-x-auto max-h-[350px] overflow-y-auto">
@@ -354,6 +388,7 @@
     <section id="tab-settings" class="hidden space-y-6">
       <div class="bg-white rounded-2xl p-6 border shadow-xs space-y-4">
         <h3 class="text-base font-black text-slate-900">GAS連携設定・商品マスタ管理</h3>
+        <p class="text-xs text-slate-500">全スタッフの送信先およびダッシュボードの集計元となる共通GAS Web App URLを設定します。</p>
         <input type="url" id="gasUrlInput" class="w-full px-3.5 py-2.5 bg-slate-50 border rounded-xl font-mono text-sm" placeholder="https://script.google.com/macros/s/.../exec">
         <div class="flex flex-wrap items-center gap-2">
           <button onclick="saveGasUrl()" class="px-4 py-2.5 bg-indigo-600 text-white font-bold text-xs rounded-xl">保存</button>
@@ -432,7 +467,7 @@
     <div class="bg-white rounded-2xl p-6 max-w-xl w-full shadow-2xl space-y-4 max-h-[85vh] flex flex-col">
       <div class="flex items-center justify-between border-b border-slate-200 pb-3">
         <div>
-          <h3 class="text-lg font-black text-slate-900">本日の送信履歴（当日限定表示）</h3>
+          <h3 class="text-lg font-black text-slate-900">本日の送信履歴（この端末の当日控え）</h3>
           <p id="todayHistoryDateLabel" class="text-xs text-slate-500 font-bold mt-0.5">対象日: -</p>
         </div>
         <button type="button" onclick="closeTodayHistoryModal()" class="text-slate-400 hover:text-slate-700 text-lg font-bold px-2 py-1 rounded-lg">
@@ -513,6 +548,10 @@
     let isSubmitting = false;
     let lastScannedCode = '';
     let lastScannedAt = 0;
+
+    let monthlyQtyChartInstance = null;
+    let weeklyQtyChartInstance = null;
+    let workerProdChartInstance = null;
 
     function isGasNativeEnv() {
       return typeof google !== 'undefined' && google.script && google.script.run;
@@ -768,6 +807,30 @@
       return `${(parts.find(p=>p.type==='year')||{}).value}-${(parts.find(p=>p.type==='month')||{}).value}-${(parts.find(p=>p.type==='day')||{}).value}`;
     }
 
+    // YYYY-MM-DD 文字列を週初（月曜日）の YYYY-MM-DD へ変換
+    function getMondayDateString(dateStr) {
+      const match = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(dateStr || '').trim());
+      if (!match) return null;
+      const year = parseInt(match[1], 10);
+      const month = parseInt(match[2], 10) - 1;
+      const day = parseInt(match[3], 10);
+      const dt = new Date(Date.UTC(year, month, day));
+      const utcDay = dt.getUTCDay();
+      const diffToMonday = utcDay === 0 ? -6 : 1 - utcDay;
+      dt.setUTCDate(dt.getUTCDate() + diffToMonday);
+      const y = dt.getUTCFullYear();
+      const m = String(dt.getUTCMonth() + 1).padStart(2, '0');
+      const d = String(dt.getUTCDate()).padStart(2, '0');
+      return `${y}-${m}-${d}`;
+    }
+
+    // YYYY-MM-DD 文字列を YYYY-MM へ変換
+    function getYearMonthString(dateStr) {
+      const match = /^(\d{4})-(\d{2})/.exec(String(dateStr || '').trim());
+      if (!match) return null;
+      return `${match[1]}-${match[2]}`;
+    }
+
     function updateDraftUI() {
       const count = draftRecords.length;
       const totalQty = draftRecords.reduce((sum, r) => sum + r.quantity, 0);
@@ -866,7 +929,6 @@
       document.getElementById('submitStep2').classList.remove('hidden');
     }
 
-    // 「もう一度リストを確認する」→ モーダルを閉じてリスト確認画面へ戻る
     function backToListFromConfirm() {
       closeSubmitModal();
       showToast('検品確認リストに戻りました');
@@ -934,7 +996,6 @@
       }
     }
 
-    // 合算判定は商品名変更を考慮して既存通り code 基準を維持
     function confirmActiveItem() {
       if (!activeScannedItem) return;
       const input = document.getElementById('tenkeyQtyInput');
@@ -967,7 +1028,6 @@
       cancelActiveScan();
     }
 
-    // 「間違いないので送信する」タップ時のみ送信を実行（二重送信防止付き）
     function executeSubmit() {
       if (isSubmitting) return;
       if (!pendingSubmissionContext) {
@@ -1149,7 +1209,6 @@
       startCamera();
     }
 
-    // 同一バーコード連続読込クールダウン＆商品マスタ未該当時の案内表示
     function handleScannedCode(code) {
       const cleanCode = String(code || '').trim();
       if (!cleanCode) return;
@@ -1174,7 +1233,7 @@
       }
     }
 
-    // 生産性ダッシュボードデータ読み込み＆編集機能
+    // スプレッドシート全体（全スタッフ送信データ）を取得して集計・グラフ描画
     function loadProductivityData() {
       const effectiveUrl = getEffectiveGasUrl();
       if (isGasNativeEnv()) {
@@ -1183,7 +1242,7 @@
             renderProductivityDashboard(res);
           })
           .withFailureHandler(() => {
-            showToast('データ取得に失敗しました');
+            showToast('スプレッドシートデータの取得に失敗しました');
           })
           .getProductivityData();
       } else if (effectiveUrl) {
@@ -1192,21 +1251,31 @@
           .then(data => {
             renderProductivityDashboard(data);
           }).catch(() => {
-            showToast('データ取得に失敗しました');
+            showToast('スプレッドシートデータの取得に失敗しました');
           });
       } else {
-        showToast('GASのURLまたは環境が設定されていません');
+        showToast('「設定・GAS連携」から共通GAS URLを設定してください');
       }
     }
 
     function renderProductivityDashboard(data) {
       if (!data || !data.success) {
-        showToast('データの取得に失敗しました');
+        showToast('スプレッドシートデータの取得に失敗しました');
         return;
       }
 
       cachedRecords = data.records || [];
       const workTimes = data.workTimes || [];
+
+      const uniqueWorkers = new Set([
+        ...cachedRecords.map(r => r.worker || '未設定'),
+        ...workTimes.map(w => w.worker || '未設定')
+      ]);
+
+      const scopeDescEl = document.getElementById('dashScopeDescription');
+      if (scopeDescEl) {
+        scopeDescEl.textContent = `全スタッフ集計対象: ${uniqueWorkers.size}名 / 実績 ${cachedRecords.length}件（スプレッドシート集約データ）`;
+      }
 
       let totalQty = cachedRecords.reduce((sum, r) => sum + (Number(r.quantity) || 0), 0);
       let totalMins = workTimes.reduce((sum, w) => sum + (Number(w.minutes) || 0), 0);
@@ -1217,7 +1286,8 @@
       document.getElementById('dashTotalMinutes').textContent = `${totalMins.toLocaleString()} 分 (${(totalHours).toFixed(1)}h)`;
       document.getElementById('dashAvgProductivity').textContent = `${avgProd} 個/h`;
 
-      // 編集用テーブル（送信済み実績一覧）の描画
+      renderProductivityCharts(cachedRecords, workTimes);
+
       const tbodyRecords = document.getElementById('dashRecordsTableBody');
       if (cachedRecords.length === 0) {
         tbodyRecords.innerHTML = '<tr><td colspan="7" class="p-6 text-center text-slate-400 font-bold">検品実績データがありません</td></tr>';
@@ -1237,7 +1307,6 @@
         `).join('');
       }
 
-      // ④ 作業者別生産性ランキング
       const workerMap = {};
       cachedRecords.forEach(r => {
         const w = r.worker || '未設定';
@@ -1274,7 +1343,6 @@
         </tr>
       `).join('');
 
-      // ③ 検品商品別一覧
       const itemMap = {};
       cachedRecords.forEach(r => {
         const key = r.code;
@@ -1298,7 +1366,177 @@
       `).join('');
     }
 
-    // 編集モーダルの制御（GAS返却の rowNumber / id を優先利用し、行ズレリスクを低減）
+    function renderProductivityCharts(records, workTimes) {
+      if (typeof Chart === 'undefined') return;
+
+      const monthMap = {};
+      const weekMap = {};
+
+      records.forEach(r => {
+        const qty = Number(r.quantity) || 0;
+        const ym = getYearMonthString(r.date);
+        const monday = getMondayDateString(r.date);
+        if (ym) {
+          monthMap[ym] = (monthMap[ym] || 0) + qty;
+        }
+        if (monday) {
+          weekMap[monday] = (weekMap[monday] || 0) + qty;
+        }
+      });
+
+      const monthKeys = Object.keys(monthMap).sort();
+      const monthLabels = monthKeys.map(k => `${k}月`);
+      const monthValues = monthKeys.map(k => monthMap[k]);
+
+      const weekKeys = Object.keys(weekMap).sort();
+      const weekLabels = weekKeys.map(k => `${k}週〜`);
+      const weekValues = weekKeys.map(k => weekMap[k]);
+
+      const monthlySummaryEl = document.getElementById('monthlyChartSummary');
+      if (monthlySummaryEl) {
+        monthlySummaryEl.textContent = monthKeys.length > 0
+          ? `対象 ${monthKeys.length}ヶ月 / 最新: ${monthValues[monthValues.length - 1].toLocaleString()}個`
+          : 'データなし';
+      }
+
+      const weeklySummaryEl = document.getElementById('weeklyChartSummary');
+      if (weeklySummaryEl) {
+        weeklySummaryEl.textContent = weekKeys.length > 0
+          ? `対象 ${weekKeys.length}週 / 最新週: ${weekValues[weekValues.length - 1].toLocaleString()}個`
+          : 'データなし';
+      }
+
+      if (monthlyQtyChartInstance) {
+        monthlyQtyChartInstance.destroy();
+      }
+      const monthlyCtx = document.getElementById('monthlyQtyChart');
+      if (monthlyCtx) {
+        monthlyQtyChartInstance = new Chart(monthlyCtx, {
+          type: 'bar',
+          data: {
+            labels: monthLabels,
+            datasets: [{
+              label: '月別検品数量 (個)',
+              data: monthValues,
+              backgroundColor: 'rgba(79, 70, 229, 0.78)',
+              borderColor: 'rgb(67, 56, 202)',
+              borderWidth: 1,
+              borderRadius: 6
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+            scales: {
+              y: { beginAtZero: true, ticks: { precision: 0 } }
+            }
+          }
+        });
+      }
+
+      if (weeklyQtyChartInstance) {
+        weeklyQtyChartInstance.destroy();
+      }
+      const weeklyCtx = document.getElementById('weeklyQtyChart');
+      if (weeklyCtx) {
+        weeklyQtyChartInstance = new Chart(weeklyCtx, {
+          type: 'line',
+          data: {
+            labels: weekLabels,
+            datasets: [{
+              label: '週別検品数量 (個)',
+              data: weekValues,
+              borderColor: 'rgb(5, 150, 105)',
+              backgroundColor: 'rgba(16, 185, 129, 0.16)',
+              borderWidth: 2.5,
+              tension: 0.25,
+              fill: true,
+              pointRadius: 4
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+            scales: {
+              y: { beginAtZero: true, ticks: { precision: 0 } }
+            }
+          }
+        });
+      }
+
+      const wQtyMap = {};
+      records.forEach(r => {
+        const name = r.worker || '未設定';
+        wQtyMap[name] = (wQtyMap[name] || 0) + (Number(r.quantity) || 0);
+      });
+      const wMinMap = {};
+      workTimes.forEach(w => {
+        const name = w.worker || '未設定';
+        wMinMap[name] = (wMinMap[name] || 0) + (Number(w.minutes) || 0);
+      });
+
+      const allWorkers = Array.from(new Set([...Object.keys(wQtyMap), ...Object.keys(wMinMap)]));
+      const workerStats = allWorkers.map(name => {
+        const qty = wQtyMap[name] || 0;
+        const hrs = (wMinMap[name] || 0) / 60;
+        const prod = hrs > 0 ? Number((qty / hrs).toFixed(1)) : 0;
+        return { name, qty, prod };
+      }).sort((a, b) => b.qty - a.qty);
+
+      if (workerProdChartInstance) {
+        workerProdChartInstance.destroy();
+      }
+      const workerCtx = document.getElementById('workerProdChart');
+      if (workerCtx) {
+        workerProdChartInstance = new Chart(workerCtx, {
+          type: 'bar',
+          data: {
+            labels: workerStats.map(w => w.name),
+            datasets: [
+              {
+                type: 'bar',
+                label: '検品数量 (個)',
+                data: workerStats.map(w => w.qty),
+                backgroundColor: 'rgba(99, 102, 241, 0.72)',
+                borderRadius: 6,
+                yAxisID: 'y'
+              },
+              {
+                type: 'line',
+                label: '生産性 (個/h)',
+                data: workerStats.map(w => w.prod),
+                borderColor: 'rgb(217, 119, 6)',
+                backgroundColor: 'rgb(217, 119, 6)',
+                borderWidth: 2.5,
+                tension: 0.2,
+                yAxisID: 'y1'
+              }
+            ]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+              y: {
+                type: 'linear',
+                position: 'left',
+                beginAtZero: true,
+                ticks: { precision: 0 }
+              },
+              y1: {
+                type: 'linear',
+                position: 'right',
+                beginAtZero: true,
+                grid: { drawOnChartArea: false }
+              }
+            }
+          }
+        });
+      }
+    }
+
     function openEditModal(index) {
       const record = cachedRecords[index];
       if (!record) return;
