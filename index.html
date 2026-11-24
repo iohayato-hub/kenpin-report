@@ -142,6 +142,26 @@
                 選択完了後、数量を入力してリストに追加できます。
               </p>
             </div>
+
+            <!-- 商品マスタ未該当アラート表示 -->
+            <div id="cockpitMasterMissingState" class="hidden py-5 px-4 bg-rose-50 border-2 border-rose-300 rounded-xl text-center space-y-3">
+              <div class="text-rose-600 font-black text-xs tracking-wider">⚠️ スキャンエラー</div>
+              <p id="masterMissingMessage" class="text-sm sm:text-base font-black text-rose-800">
+                商品マスタが存在しません、商品マスタを再読込して下さい
+              </p>
+              <p id="masterMissingScannedCode" class="text-xs font-mono text-rose-700">
+                読込コード: -
+              </p>
+              <div class="flex flex-wrap items-center justify-center gap-2 pt-1">
+                <button type="button" onclick="refreshMaster(true)" class="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white font-black text-xs rounded-xl shadow-xs transition">
+                  🔄 商品マスタを再読込
+                </button>
+                <button type="button" onclick="cancelActiveScan()" class="px-3 py-2 bg-white hover:bg-slate-100 text-slate-700 font-bold text-xs rounded-xl border border-slate-300 transition">
+                  閉じる
+                </button>
+              </div>
+            </div>
+
             <div id="cockpitActiveState" class="hidden space-y-4">
               <div class="bg-white border-2 border-indigo-300 p-4 rounded-xl shadow-xs space-y-2.5">
                 <div class="flex items-start justify-between">
@@ -192,9 +212,16 @@
 
         <div class="lg:col-span-5 space-y-4">
           <div class="bg-white rounded-2xl border border-slate-200 shadow-sm flex flex-col h-[740px]">
-            <div class="p-4 border-b border-slate-200 bg-slate-50 rounded-t-2xl flex items-center justify-between">
-              <h3 class="text-sm font-extrabold text-slate-900">4. 検品確認リスト (<span id="listTotalKindsBadge">0品目</span>)</h3>
-              <div id="listTotalQuantityBadge" class="text-xl font-black text-indigo-700">0 個</div>
+            <div class="p-4 border-b border-slate-200 bg-slate-50 rounded-t-2xl flex items-center justify-between gap-2">
+              <div class="flex items-center gap-2">
+                <h3 class="text-sm font-extrabold text-slate-900">4. 検品確認リスト (<span id="listTotalKindsBadge">0品目</span>)</h3>
+              </div>
+              <div class="flex items-center gap-2.5">
+                <button type="button" onclick="openTodayHistoryModal()" class="px-2.5 py-1 bg-white hover:bg-indigo-50 text-indigo-700 border border-indigo-200 rounded-lg text-xs font-bold transition shadow-2xs">
+                  当日履歴 (<span id="todayHistoryCountBadge">0</span>)
+                </button>
+                <div id="listTotalQuantityBadge" class="text-xl font-black text-indigo-700">0 個</div>
+              </div>
             </div>
 
             <div id="draftListContainer" class="flex-1 overflow-y-auto p-4 space-y-2.5">
@@ -256,7 +283,7 @@
         <div class="bg-white rounded-2xl p-6 border shadow-xs space-y-4 print-card">
           <div class="flex items-center justify-between">
             <h3 class="text-sm font-black text-slate-900">📋 送信済み検品実績一覧（修正・削除可能）</h3>
-            <span class="text-xs text-slate-400">行をクリックして数量や商品を変更</span>
+            <span class="text-xs text-slate-400">行の「編集」から数量や商品名を変更</span>
           </div>
           <div class="overflow-x-auto max-h-[350px] overflow-y-auto">
             <table class="w-full text-left text-xs">
@@ -326,37 +353,104 @@
     <!-- TAB 3: 設定・GAS連携 -->
     <section id="tab-settings" class="hidden space-y-6">
       <div class="bg-white rounded-2xl p-6 border shadow-xs space-y-4">
-        <h3 class="text-base font-black text-slate-900">GAS連携設定</h3>
+        <h3 class="text-base font-black text-slate-900">GAS連携設定・商品マスタ管理</h3>
         <input type="url" id="gasUrlInput" class="w-full px-3.5 py-2.5 bg-slate-50 border rounded-xl font-mono text-sm" placeholder="https://script.google.com/macros/s/.../exec">
-        <button onclick="saveGasUrl()" class="px-4 py-2.5 bg-indigo-600 text-white font-bold text-xs rounded-xl">保存</button>
+        <div class="flex flex-wrap items-center gap-2">
+          <button onclick="saveGasUrl()" class="px-4 py-2.5 bg-indigo-600 text-white font-bold text-xs rounded-xl">保存</button>
+          <button onclick="refreshMaster(true)" class="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl">🔄 商品マスタを再読込</button>
+        </div>
       </div>
     </section>
   </main>
 
-  <!-- MODAL: SUBMIT -->
+  <!-- MODAL: SUBMIT (STEP1: 作業時間入力 → STEP2: 最終確認画面) -->
   <div id="modalSubmit" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 flex items-center justify-center p-4 no-print">
-    <div class="bg-white rounded-2xl p-6 max-w-md w-full shadow-2xl space-y-4">
-      <h3 class="text-lg font-black text-slate-900 text-center">本日の作業時間入力</h3>
-      <div class="space-y-1.5">
-        <label class="text-xs font-bold text-slate-700">記録する作業者名</label>
-        <input type="text" id="modalWorkerInput" class="w-full px-3 py-2 bg-slate-50 border rounded-xl text-sm font-bold">
+    <div class="bg-white rounded-2xl p-6 max-w-lg w-full shadow-2xl space-y-4">
+
+      <!-- STEP 1: 作業時間入力 -->
+      <div id="submitStep1" class="space-y-4">
+        <h3 class="text-lg font-black text-slate-900 text-center">本日の作業時間入力</h3>
+        <div class="space-y-1.5">
+          <label class="text-xs font-bold text-slate-700">記録する作業者名</label>
+          <input type="text" id="modalWorkerInput" class="w-full px-3 py-2 bg-slate-50 border rounded-xl text-sm font-bold">
+        </div>
+        <div class="space-y-1.5">
+          <label class="text-xs font-bold text-slate-700">検品日</label>
+          <input type="date" id="modalInspectionDateInput" class="w-full px-3 py-2 bg-slate-50 border rounded-xl text-xs font-bold">
+        </div>
+        <div class="space-y-2">
+          <label class="text-xs font-bold text-slate-700">本日の総作業時間（分単位 / 同日の既存時間は上書きされます）</label>
+          <input type="number" id="workMinutesInput" min="0" max="1440" value="240" class="w-full text-center text-2xl font-black py-2 bg-slate-50 border rounded-xl text-slate-900">
+        </div>
+        <div class="space-y-2 pt-2">
+          <button type="button" onclick="goToFinalConfirm(true)" class="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-sm rounded-xl shadow-xs">
+            確認画面へ進む（作業時間あり）
+          </button>
+          <button type="button" onclick="goToFinalConfirm(false)" class="w-full py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-xs rounded-xl">
+            作業時間をスキップして確認画面へ進む
+          </button>
+          <button type="button" onclick="closeSubmitModal()" class="w-full py-1.5 text-slate-400 hover:text-slate-600 text-xs">
+            キャンセル
+          </button>
+        </div>
       </div>
-      <div class="space-y-1.5">
-        <label class="text-xs font-bold text-slate-700">検品日</label>
-        <input type="date" id="modalInspectionDateInput" class="w-full px-3 py-2 bg-slate-50 border rounded-xl text-xs font-bold">
+
+      <!-- STEP 2: 最終確認画面（誤送信防止） -->
+      <div id="submitStep2" class="hidden space-y-4">
+        <div class="bg-amber-50 border-2 border-amber-400 rounded-xl p-4 text-center space-y-1">
+          <div class="text-amber-600 font-black text-xs tracking-wider">⚠️ 送信前最終確認</div>
+          <h3 class="text-base sm:text-lg font-black text-slate-900 leading-snug">
+            商品名、サイズ、検品数量は<br>間違いありませんか？
+          </h3>
+        </div>
+
+        <div class="bg-slate-50 border border-slate-200 rounded-xl p-3 space-y-2">
+          <div class="flex justify-between text-xs font-bold text-slate-600 border-b border-slate-200 pb-1.5">
+            <span id="confirmMetaWorkerDate">担当: - / 日付: -</span>
+            <span id="confirmMetaTime" class="text-indigo-700">作業時間: -</span>
+          </div>
+          <div id="confirmItemsPreview" class="max-h-48 overflow-y-auto divide-y divide-slate-200 text-xs">
+            <!-- JSで明細を描画 -->
+          </div>
+        </div>
+
+        <div class="space-y-2.5 pt-1">
+          <button type="button" id="btnFinalSubmitConfirm" onclick="executeSubmit()" class="w-full py-3.5 bg-emerald-600 hover:bg-emerald-700 disabled:bg-slate-300 text-white font-black text-sm rounded-xl shadow-md transition">
+            間違いないので送信する
+          </button>
+          <button type="button" onclick="backToListFromConfirm()" class="w-full py-3 bg-white hover:bg-slate-100 text-slate-800 font-extrabold text-sm rounded-xl border-2 border-slate-300 transition">
+            もう一度リストを確認する
+          </button>
+        </div>
       </div>
-      <div class="space-y-2">
-        <label class="text-xs font-bold text-slate-700">本日の総作業時間（分単位 / 同日の既存時間は上書きされます）</label>
-        <input type="number" id="workMinutesInput" min="0" max="1440" value="240" class="w-full text-center text-2xl font-black py-2 bg-slate-50 border rounded-xl text-slate-900">
-      </div>
-      <div class="space-y-2 pt-2">
-        <button onclick="executeSubmit(true)" class="w-full py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm rounded-xl">
-          作業時間を上書きして送信
+
+    </div>
+  </div>
+
+  <!-- MODAL: TODAY SUBMITTED HISTORY（当日限定送信履歴） -->
+  <div id="modalTodayHistory" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 flex items-center justify-center p-4 no-print">
+    <div class="bg-white rounded-2xl p-6 max-w-xl w-full shadow-2xl space-y-4 max-h-[85vh] flex flex-col">
+      <div class="flex items-center justify-between border-b border-slate-200 pb-3">
+        <div>
+          <h3 class="text-lg font-black text-slate-900">本日の送信履歴（当日限定表示）</h3>
+          <p id="todayHistoryDateLabel" class="text-xs text-slate-500 font-bold mt-0.5">対象日: -</p>
+        </div>
+        <button type="button" onclick="closeTodayHistoryModal()" class="text-slate-400 hover:text-slate-700 text-lg font-bold px-2 py-1 rounded-lg">
+          ✕
         </button>
-        <button onclick="executeSubmit(false)" class="w-full py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 font-semibold text-xs rounded-xl">
-          作業時間をスキップして実績のみ送信
+      </div>
+
+      <div id="todayHistoryList" class="flex-1 overflow-y-auto divide-y divide-slate-100 text-xs space-y-1 pr-1">
+        <!-- JSで当日送信履歴を描画 -->
+      </div>
+
+      <div class="pt-2 border-t border-slate-200 flex items-center justify-between gap-3">
+        <button type="button" onclick="clearTodayHistory()" class="px-3 py-2 text-rose-600 hover:bg-rose-50 rounded-xl text-xs font-bold border border-rose-200">
+          当日履歴をクリア
         </button>
-        <button onclick="closeSubmitModal()" class="w-full py-1.5 text-slate-400 text-xs">キャンセル</button>
+        <button type="button" onclick="closeTodayHistoryModal()" class="px-5 py-2.5 bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs rounded-xl">
+          閉じる
+        </button>
       </div>
     </div>
   </div>
@@ -366,6 +460,10 @@
     <div class="bg-white rounded-2xl p-6 max-w-md w-full shadow-2xl space-y-4">
       <h3 class="text-lg font-black text-slate-900 text-center">検品実績の修正・削除</h3>
       <input type="hidden" id="editRowIndex">
+      <input type="hidden" id="editRecordId">
+      <input type="hidden" id="editOriginalCode">
+      <input type="hidden" id="editOriginalDate">
+      <input type="hidden" id="editOriginalWorker">
       <div class="space-y-1.5">
         <label class="text-xs font-bold text-slate-700">商品コード</label>
         <input type="text" id="editItemCode" readonly class="w-full px-3 py-2 bg-slate-100 border rounded-xl text-sm font-bold font-mono">
@@ -391,20 +489,30 @@
   </div>
 
   <script>
+    const MASTER_MISSING_MESSAGE = '商品マスタが存在しません、商品マスタを再読込して下さい';
     const DEFAULT_MASTER = [
       { code: 'RMB-001', name1: 'ROMBO', name2: 'BLK WHT XS', size: 'XS', jan: '4580001230011' },
       { code: 'RMB-002', name1: 'ROMBO', name2: 'BLK WHT S', size: 'S', jan: '4580001230028' },
       { code: 'RMB-003', name1: 'ROMBO', name2: 'NVY RED M', size: 'M', jan: '4580001230035' }
     ];
+    const TODAY_HISTORY_KEY = 'gas_insp_today_history';
+    const SCAN_COOLDOWN_MS = 1800;
+
     let masterItems = DEFAULT_MASTER;
     let draftRecords = [];
     let cachedRecords = [];
+    let todaySubmittedHistory = [];
     let activeScannedItem = null;
     let isAwaitingQuantity = false;
     let html5QrScanner = null;
     let isCameraActive = false;
     let selectedCameraId = '';
     let isProdUnlocked = false;
+    let pendingIncludeTime = true;
+    let pendingSubmissionContext = null;
+    let isSubmitting = false;
+    let lastScannedCode = '';
+    let lastScannedAt = 0;
 
     function isGasNativeEnv() {
       return typeof google !== 'undefined' && google.script && google.script.run;
@@ -423,7 +531,7 @@
       loadStorage();
       setupSearchEvents();
       updateDraftUI();
-      refreshMaster();
+      refreshMaster(false);
       initCamera();
     });
 
@@ -459,6 +567,128 @@
       if (savedUrl) {
         document.getElementById('gasUrlInput').value = savedUrl;
       }
+
+      loadAndPruneTodayHistory();
+    }
+
+    // 当日（JST）履歴のみ保持し、過去日データは自動破棄してデータ肥大化を防止
+    function loadAndPruneTodayHistory() {
+      const today = getJstDateString();
+      try {
+        const raw = localStorage.getItem(TODAY_HISTORY_KEY);
+        const parsed = raw ? JSON.parse(raw) : [];
+        const list = Array.isArray(parsed) ? parsed : [];
+        todaySubmittedHistory = list.filter(entry => entry && entry.date === today);
+        localStorage.setItem(TODAY_HISTORY_KEY, JSON.stringify(todaySubmittedHistory));
+      } catch (e) {
+        todaySubmittedHistory = [];
+        localStorage.removeItem(TODAY_HISTORY_KEY);
+      }
+      updateTodayHistoryBadge();
+    }
+
+    function updateTodayHistoryBadge() {
+      const badge = document.getElementById('todayHistoryCountBadge');
+      if (badge) {
+        badge.textContent = String(todaySubmittedHistory.length);
+      }
+    }
+
+    function recordTodaySubmission(records, workTime, selectedDate) {
+      const today = getJstDateString();
+      const targetDate = selectedDate || today;
+      if (targetDate !== today) return;
+
+      loadAndPruneTodayHistory();
+
+      const nowTime = new Intl.DateTimeFormat('ja-JP', {
+        timeZone: 'Asia/Tokyo',
+        hour: '2-digit',
+        minute: '2-digit'
+      }).format(new Date());
+
+      const entry = {
+        id: 'hist_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6),
+        date: targetDate,
+        submittedAt: nowTime,
+        worker: (records[0] && records[0].worker) || (workTime && workTime.worker) || '山田',
+        workMinutes: workTime ? Number(workTime.minutes) || 0 : null,
+        items: records.map(r => ({
+          code: r.code || '',
+          name1: r.name1 || '',
+          name2: r.name2 || '',
+          size: r.size || '',
+          quantity: Number(r.quantity) || 0
+        }))
+      };
+
+      todaySubmittedHistory.unshift(entry);
+      localStorage.setItem(TODAY_HISTORY_KEY, JSON.stringify(todaySubmittedHistory));
+      updateTodayHistoryBadge();
+    }
+
+    function openTodayHistoryModal() {
+      loadAndPruneTodayHistory();
+      const today = getJstDateString();
+      const dateLabel = document.getElementById('todayHistoryDateLabel');
+      if (dateLabel) {
+        dateLabel.textContent = `対象日: ${today}（日付が変わると過去履歴は自動削除されます）`;
+      }
+
+      const container = document.getElementById('todayHistoryList');
+      if (!container) return;
+
+      if (todaySubmittedHistory.length === 0) {
+        container.innerHTML = '<div class="py-10 text-center text-slate-400 font-bold">本日の送信履歴はありません</div>';
+      } else {
+        container.innerHTML = todaySubmittedHistory.map(entry => {
+          const totalQty = entry.items.reduce((s, it) => s + (Number(it.quantity) || 0), 0);
+          const timeText = entry.workMinutes !== null ? `作業時間: ${entry.workMinutes}分` : '作業時間: スキップ';
+          const itemsHtml = entry.items.map(it => `
+            <div class="flex items-center justify-between gap-2 py-1 text-slate-700">
+              <div class="min-w-0 truncate">
+                <span class="font-mono text-indigo-700 font-bold">${escapeHtml(it.code)}</span>
+                <span class="font-bold text-slate-900 ml-1">${escapeHtml(it.name1)}</span>
+                <span class="text-amber-900 ml-1">${escapeHtml(it.name2)}</span>
+                <span class="ml-1 px-1.5 py-0.5 bg-slate-100 rounded font-bold text-[11px]">${escapeHtml(it.size)}</span>
+              </div>
+              <div class="font-black text-slate-900 shrink-0">${Number(it.quantity).toLocaleString()} 個</div>
+            </div>
+          `).join('');
+
+          return `
+            <div class="py-3 space-y-2">
+              <div class="flex flex-wrap items-center justify-between gap-2 bg-slate-50 px-3 py-2 rounded-xl">
+                <div class="font-bold text-slate-800">
+                  <span>${escapeHtml(entry.submittedAt)} 送信</span>
+                  <span class="mx-1.5 text-slate-300">|</span>
+                  <span>担当: ${escapeHtml(entry.worker)}</span>
+                  <span class="mx-1.5 text-slate-300">|</span>
+                  <span class="text-indigo-700">${escapeHtml(timeText)}</span>
+                </div>
+                <div class="font-black text-emerald-700">合計 ${totalQty.toLocaleString()} 個</div>
+              </div>
+              <div class="px-2 divide-y divide-slate-100">
+                ${itemsHtml}
+              </div>
+            </div>
+          `;
+        }).join('');
+      }
+
+      document.getElementById('modalTodayHistory').classList.remove('hidden');
+    }
+
+    function closeTodayHistoryModal() {
+      document.getElementById('modalTodayHistory').classList.add('hidden');
+    }
+
+    function clearTodayHistory() {
+      todaySubmittedHistory = [];
+      localStorage.removeItem(TODAY_HISTORY_KEY);
+      updateTodayHistoryBadge();
+      openTodayHistoryModal();
+      showToast('本日の送信履歴をクリアしました');
     }
 
     function setQuickWorker(name) {
@@ -471,8 +701,12 @@
       document.getElementById('headerWorkerName').textContent = name;
     }
 
-    function refreshMaster() {
+    function refreshMaster(notifyUser = true) {
       const effectiveUrl = getEffectiveGasUrl();
+      if (notifyUser) {
+        showToast('商品マスタを再読込しています...');
+      }
+
       if (isGasNativeEnv()) {
         google.script.run
           .withSuccessHandler(data => {
@@ -480,9 +714,18 @@
               masterItems = data.items;
               localStorage.setItem('gas_insp_master', JSON.stringify(data.items));
               document.getElementById('headerMasterCount').textContent = `マスタ: ${masterItems.length}件`;
+              if (notifyUser) {
+                showToast(`商品マスタを再読込しました（${masterItems.length}件）`);
+              }
+            } else if (notifyUser) {
+              showToast('商品マスタの取得結果が空でした');
             }
           })
-          .withFailureHandler(() => {})
+          .withFailureHandler(() => {
+            if (notifyUser) {
+              showToast('商品マスタの再読込に失敗しました');
+            }
+          })
           .getMaster();
       } else if (effectiveUrl) {
         fetch(effectiveUrl + '?action=getMaster')
@@ -492,8 +735,19 @@
               masterItems = data.items;
               localStorage.setItem('gas_insp_master', JSON.stringify(data.items));
               document.getElementById('headerMasterCount').textContent = `マスタ: ${masterItems.length}件`;
+              if (notifyUser) {
+                showToast(`商品マスタを再読込しました（${masterItems.length}件）`);
+              }
+            } else if (notifyUser) {
+              showToast('商品マスタの取得結果が空でした');
             }
-          }).catch(() => {});
+          }).catch(() => {
+            if (notifyUser) {
+              showToast('商品マスタの再読込に失敗しました');
+            }
+          });
+      } else if (notifyUser) {
+        showToast('GAS URLが未設定のためローカルマスタを表示中です');
       }
     }
 
@@ -529,11 +783,11 @@
       container.innerHTML = draftRecords.map((item, idx) => `
         <div class="p-3 bg-slate-50 rounded-xl border flex items-center justify-between gap-2">
           <div class="min-w-0 flex-1">
-            <div class="text-xs font-bold text-indigo-700 truncate">${item.code} - ${item.name1}</div>
-            <div class="text-xs font-semibold text-amber-900 truncate">${item.name2} / ${item.size}</div>
+            <div class="text-xs font-bold text-indigo-700 truncate">${escapeHtml(item.code)} - ${escapeHtml(item.name1)}</div>
+            <div class="text-xs font-semibold text-amber-900 truncate">${escapeHtml(item.name2)} / ${escapeHtml(item.size)}</div>
           </div>
           <div class="flex items-center gap-2">
-            <span class="text-sm font-black text-slate-900">${item.quantity}個</span>
+            <span class="text-sm font-black text-slate-900">${Number(item.quantity || 0).toLocaleString()}個</span>
             <button onclick="removeDraft(${idx})" class="text-slate-400 hover:text-rose-600 text-xs px-1.5 py-1">✕</button>
           </div>
         </div>
@@ -546,13 +800,76 @@
     }
 
     function openSubmitModal() {
+      if (!draftRecords || draftRecords.length === 0) return;
+      pendingSubmissionContext = null;
+      isSubmitting = false;
+      const confirmBtn = document.getElementById('btnFinalSubmitConfirm');
+      if (confirmBtn) confirmBtn.disabled = false;
+
       document.getElementById('modalWorkerInput').value = document.getElementById('workerInput').value;
       document.getElementById('modalInspectionDateInput').value = getJstDateString();
+      document.getElementById('submitStep1').classList.remove('hidden');
+      document.getElementById('submitStep2').classList.add('hidden');
       document.getElementById('modalSubmit').classList.remove('hidden');
     }
 
     function closeSubmitModal() {
+      pendingSubmissionContext = null;
+      isSubmitting = false;
+      const confirmBtn = document.getElementById('btnFinalSubmitConfirm');
+      if (confirmBtn) confirmBtn.disabled = false;
+
       document.getElementById('modalSubmit').classList.add('hidden');
+      document.getElementById('submitStep1').classList.remove('hidden');
+      document.getElementById('submitStep2').classList.add('hidden');
+    }
+
+    // STEP 1 → STEP 2（最終確認画面へ遷移）
+    function goToFinalConfirm(includeTime) {
+      if (!draftRecords || draftRecords.length === 0) {
+        closeSubmitModal();
+        return;
+      }
+
+      pendingIncludeTime = includeTime;
+      const worker = document.getElementById('modalWorkerInput').value.trim() || '山田';
+      const selectedDate = document.getElementById('modalInspectionDateInput').value || getJstDateString();
+      const mins = includeTime ? (parseInt(document.getElementById('workMinutesInput').value, 10) || 0) : 0;
+
+      const recordsToSubmit = draftRecords.map(d => ({ ...d, date: selectedDate, worker: worker }));
+      const workTimeRecord = includeTime ? { date: selectedDate, worker: worker, minutes: mins } : null;
+
+      pendingSubmissionContext = {
+        worker,
+        selectedDate,
+        recordsToSubmit,
+        workTimeRecord
+      };
+
+      document.getElementById('confirmMetaWorkerDate').textContent = `担当: ${worker} / ${selectedDate}`;
+      document.getElementById('confirmMetaTime').textContent = includeTime ? `作業時間: ${mins}分` : '作業時間: スキップ';
+
+      const previewContainer = document.getElementById('confirmItemsPreview');
+      previewContainer.innerHTML = recordsToSubmit.map(item => `
+        <div class="py-2 flex items-center justify-between gap-2">
+          <div class="min-w-0 flex-1">
+            <div class="font-bold text-slate-900 truncate">${escapeHtml(item.name1)} <span class="text-amber-900 font-semibold">(${escapeHtml(item.name2)})</span></div>
+            <div class="text-[11px] font-mono text-indigo-700">${escapeHtml(item.code)} / サイズ: <span class="font-black text-slate-900">${escapeHtml(item.size)}</span></div>
+          </div>
+          <div class="text-sm font-black text-emerald-700 shrink-0">
+            ${Number(item.quantity).toLocaleString()} 個
+          </div>
+        </div>
+      `).join('');
+
+      document.getElementById('submitStep1').classList.add('hidden');
+      document.getElementById('submitStep2').classList.remove('hidden');
+    }
+
+    // 「もう一度リストを確認する」→ モーダルを閉じてリスト確認画面へ戻る
+    function backToListFromConfirm() {
+      closeSubmitModal();
+      showToast('検品確認リストに戻りました');
     }
 
     function setActiveScannedItem(item) {
@@ -569,6 +886,7 @@
       qtyInput.value = 1;
 
       document.getElementById('cockpitIdleState').classList.add('hidden');
+      document.getElementById('cockpitMasterMissingState').classList.add('hidden');
       document.getElementById('cockpitActiveState').classList.remove('hidden');
 
       setTimeout(() => {
@@ -577,10 +895,22 @@
       }, 50);
     }
 
+    function showMasterMissingAlert(scannedCode) {
+      activeScannedItem = null;
+      isAwaitingQuantity = false;
+      document.getElementById('cockpitIdleState').classList.add('hidden');
+      document.getElementById('cockpitActiveState').classList.add('hidden');
+      document.getElementById('masterMissingMessage').textContent = MASTER_MISSING_MESSAGE;
+      document.getElementById('masterMissingScannedCode').textContent = `読込コード: ${scannedCode}`;
+      document.getElementById('cockpitMasterMissingState').classList.remove('hidden');
+      showToast(MASTER_MISSING_MESSAGE);
+    }
+
     function cancelActiveScan() {
       activeScannedItem = null;
       isAwaitingQuantity = false;
       document.getElementById('cockpitActiveState').classList.add('hidden');
+      document.getElementById('cockpitMasterMissingState').classList.add('hidden');
       document.getElementById('cockpitIdleState').classList.remove('hidden');
     }
 
@@ -604,6 +934,7 @@
       }
     }
 
+    // 合算判定は商品名変更を考慮して既存通り code 基準を維持
     function confirmActiveItem() {
       if (!activeScannedItem) return;
       const input = document.getElementById('tenkeyQtyInput');
@@ -614,6 +945,9 @@
       const existingIdx = draftRecords.findIndex(r => String(r.code) === String(activeScannedItem.code));
       if (existingIdx >= 0) {
         draftRecords[existingIdx].quantity += qty;
+        draftRecords[existingIdx].name1 = activeScannedItem.name1;
+        draftRecords[existingIdx].name2 = activeScannedItem.name2;
+        draftRecords[existingIdx].size = activeScannedItem.size;
       } else {
         draftRecords.unshift({
           id: 'draft_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4),
@@ -633,13 +967,19 @@
       cancelActiveScan();
     }
 
-    function executeSubmit(includeTime) {
-      const worker = document.getElementById('modalWorkerInput').value.trim() || '山田';
-      const mins = includeTime ? (parseInt(document.getElementById('workMinutesInput').value, 10) || 0) : 0;
-      const selectedDate = document.getElementById('modalInspectionDateInput').value || getJstDateString();
+    // 「間違いないので送信する」タップ時のみ送信を実行（二重送信防止付き）
+    function executeSubmit() {
+      if (isSubmitting) return;
+      if (!pendingSubmissionContext) {
+        goToFinalConfirm(pendingIncludeTime);
+        if (!pendingSubmissionContext) return;
+      }
 
-      const recordsToSubmit = draftRecords.map(d => ({ ...d, date: selectedDate, worker: worker }));
-      const workTimeRecord = includeTime ? { date: selectedDate, worker: worker, minutes: mins } : null;
+      isSubmitting = true;
+      const confirmBtn = document.getElementById('btnFinalSubmitConfirm');
+      if (confirmBtn) confirmBtn.disabled = true;
+
+      const { worker, selectedDate, recordsToSubmit, workTimeRecord } = pendingSubmissionContext;
 
       const payload = {
         action: 'submitReport',
@@ -648,12 +988,19 @@
       };
 
       const url = getEffectiveGasUrl();
-      
+
+      recordTodaySubmission(recordsToSubmit, workTimeRecord, selectedDate);
+
       if (isGasNativeEnv()) {
         google.script.run
           .withSuccessHandler(() => { finishSubmitSuccess(recordsToSubmit.length); })
-          .withFailureHandler(() => { finishSubmitSuccess(recordsToSubmit.length); })
+          .withFailureHandler(() => {
+            isSubmitting = false;
+            if (confirmBtn) confirmBtn.disabled = false;
+            showToast('GAS送信エラーが発生しました');
+          })
           .doPostSimulation(payload);
+        return;
       } else if (url) {
         fetch(url, { method: 'POST', mode: 'no-cors', body: JSON.stringify(payload) }).catch(() => {});
       }
@@ -665,7 +1012,6 @@
       draftRecords = [];
       saveDrafts();
       closeSubmitModal();
-      // 大型ポップアップを表示して作業者に確実に通知
       document.getElementById('largeSuccessDetail').textContent = `検品実績 ${count}件 のデータと作業時間がスプレッドシートに正常に記録されました。`;
       document.getElementById('largeSuccessBanner').classList.remove('hidden');
     }
@@ -738,10 +1084,14 @@
     }
 
     function initCamera() {
+      if (!window.Html5Qrcode || !Html5Qrcode.getCameras) {
+        document.getElementById('cameraSelect').innerHTML = '<option value="">カメラライブラリ未読込</option>';
+        return;
+      }
       Html5Qrcode.getCameras().then(devices => {
         const select = document.getElementById('cameraSelect');
         if (devices && devices.length > 0) {
-          select.innerHTML = devices.map(d => `<option value="${d.id}">${d.label || 'カメラ ' + d.id}</option>`).join('');
+          select.innerHTML = devices.map(d => `<option value="${escapeHtml(d.id)}">${escapeHtml(d.label || 'カメラ ' + d.id)}</option>`).join('');
           selectedCameraId = devices[0].id;
           startCamera();
         } else {
@@ -749,6 +1099,7 @@
         }
       }).catch(() => {
         document.getElementById('cameraSelect').innerHTML = '<option value="">カメラ権限エラー</option>';
+        showToast('カメラの初期化に失敗しました（権限または接続を確認してください）');
       });
     }
 
@@ -773,7 +1124,11 @@
       ).then(() => {
         isCameraActive = true;
         document.getElementById('cameraToggleText').textContent = 'カメラ停止';
-      }).catch(() => {});
+      }).catch(() => {
+        isCameraActive = false;
+        document.getElementById('cameraToggleText').textContent = 'カメラ開始';
+        showToast('カメラを起動できませんでした');
+      });
     }
 
     function toggleCamera() {
@@ -781,7 +1136,9 @@
         html5QrScanner.stop().then(() => {
           isCameraActive = false;
           document.getElementById('cameraToggleText').textContent = 'カメラ開始';
-        }).catch(() => {});
+        }).catch(() => {
+          showToast('カメラ停止時にエラーが発生しました');
+        });
       } else {
         startCamera();
       }
@@ -792,13 +1149,28 @@
       startCamera();
     }
 
+    // 同一バーコード連続読込クールダウン＆商品マスタ未該当時の案内表示
     function handleScannedCode(code) {
-      const cleanCode = code.trim();
-      const found = masterItems.find(m => String(m.code) === cleanCode || String(m.jan) === cleanCode);
+      const cleanCode = String(code || '').trim();
+      if (!cleanCode) return;
+      if (isAwaitingQuantity) return;
+
+      const now = Date.now();
+      if (cleanCode === lastScannedCode && (now - lastScannedAt) < SCAN_COOLDOWN_MS) {
+        return;
+      }
+      lastScannedCode = cleanCode;
+      lastScannedAt = now;
+
+      const hasMaster = Array.isArray(masterItems) && masterItems.length > 0;
+      const found = hasMaster
+        ? masterItems.find(m => String(m.code) === cleanCode || String(m.jan) === cleanCode)
+        : null;
+
       if (found) {
         setActiveScannedItem(found);
       } else {
-        showToast(`未登録コード: ${cleanCode}`);
+        showMasterMissingAlert(cleanCode);
       }
     }
 
@@ -926,13 +1298,18 @@
       `).join('');
     }
 
-    // 編集モーダルの制御
+    // 編集モーダルの制御（GAS返却の rowNumber / id を優先利用し、行ズレリスクを低減）
     function openEditModal(index) {
       const record = cachedRecords[index];
       if (!record) return;
-      document.getElementById('editRowIndex').value = index + 2; // スプレッドシートの行番号 (ヘッダー含むため index + 2)
-      document.getElementById('editItemCode').value = record.code;
-      document.getElementById('editItemName1').value = record.name1;
+      const resolvedRow = record.rowNumber || record.row || (index + 2);
+      document.getElementById('editRowIndex').value = resolvedRow;
+      document.getElementById('editRecordId').value = record.id || '';
+      document.getElementById('editOriginalCode').value = record.code || '';
+      document.getElementById('editOriginalDate').value = record.date || '';
+      document.getElementById('editOriginalWorker').value = record.worker || '';
+      document.getElementById('editItemCode').value = record.code || '';
+      document.getElementById('editItemName1').value = record.name1 || '';
       document.getElementById('editQuantity').value = record.quantity;
       document.getElementById('modalEditRecord').classList.remove('hidden');
     }
@@ -943,12 +1320,21 @@
 
     function submitEditRecord() {
       const rowIndex = parseInt(document.getElementById('editRowIndex').value, 10);
+      const recordId = document.getElementById('editRecordId').value.trim();
+      const originalCode = document.getElementById('editOriginalCode').value.trim();
+      const originalDate = document.getElementById('editOriginalDate').value.trim();
+      const originalWorker = document.getElementById('editOriginalWorker').value.trim();
       const newName1 = document.getElementById('editItemName1').value.trim();
-      const newQty = parseInt(document.getElementById('editQuantity').value, 10) || 1;
+      const newQty = Math.max(1, parseInt(document.getElementById('editQuantity').value, 10) || 1);
 
       const payload = {
         action: 'updateRecord',
         rowIndex: rowIndex,
+        rowNumber: rowIndex,
+        id: recordId,
+        code: originalCode,
+        date: originalDate,
+        worker: originalWorker,
         name1: newName1,
         quantity: newQty
       };
@@ -959,10 +1345,19 @@
     function submitDeleteRecord() {
       if (!confirm('本当にこの検品実績を削除しますか？')) return;
       const rowIndex = parseInt(document.getElementById('editRowIndex').value, 10);
+      const recordId = document.getElementById('editRecordId').value.trim();
+      const originalCode = document.getElementById('editOriginalCode').value.trim();
+      const originalDate = document.getElementById('editOriginalDate').value.trim();
+      const originalWorker = document.getElementById('editOriginalWorker').value.trim();
 
       const payload = {
         action: 'deleteRecord',
-        rowIndex: rowIndex
+        rowIndex: rowIndex,
+        rowNumber: rowIndex,
+        id: recordId,
+        code: originalCode,
+        date: originalDate,
+        worker: originalWorker
       };
 
       sendRecordAction(payload, '実績を削除しました');
@@ -990,6 +1385,8 @@
           }).catch(() => {
             showToast('処理に失敗しました');
           });
+      } else {
+        showToast('GASのURLまたは環境が設定されていません');
       }
     }
 
@@ -1031,7 +1428,7 @@
     function saveGasUrl() {
       localStorage.setItem('gas_insp_url', document.getElementById('gasUrlInput').value.trim());
       showToast('URLを保存しました');
-      refreshMaster();
+      refreshMaster(true);
     }
 
     function escapeHtml(str) {
